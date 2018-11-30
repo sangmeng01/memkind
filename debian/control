@@ -12,6 +12,7 @@ Vcs-Browser: https://github.com/kilobyte/memkind/tree/debian
 Package: libmemkind0
 Architecture: any
 Section: libs
+Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: user-extensible heap manager for heterogeneous memory platforms
  The memkind library is a user extensible heap manager built on top of
@@ -24,6 +25,7 @@ Description: user-extensible heap manager for heterogeneous memory platforms
 Package: libmemkind-dev
 Architecture: any
 Section: libdevel
+Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}, libmemkind0 (= ${binary:Version})
 Description: user-extensible heap manager for heterogeneous memory platforms
  The memkind library is a user extensible heap manager built on top of
@@ -37,6 +39,7 @@ Description: user-extensible heap manager for heterogeneous memory platforms
 Package: libmemkind-progs
 Architecture: any
 Section: admin
+Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: user-extensible heap manager for heterogeneous memory platforms
  The memkind library is a user extensible heap manager built on top of
