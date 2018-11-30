@@ -4,18 +4,32 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-# ignore tests during build
+export JE_PREFIX=jemk_
+
+# tests need NUMA memory
 override_dh_auto_test:
+
+override_dh_autoreconf:
+	dpkg-parsechangelog -SVersion|cut -d- -f1 >VERSION
+	dh_update_autotools_config
+	dh_autoreconf
 
 override_dh_auto_configure:
 	./build_jemalloc.sh
-	./autogen.sh
-	dh_auto_configure -- --prefix=/usr --libdir=/usr/lib \
-           --includedir=/usr/include --sbindir=/usr/sbin --enable-cxx11 \
-           --mandir=/usr/share/man --docdir=/usr/share/doc/memkind
+	dh_auto_configure -- --prefix=/usr \
+	   --includedir=/usr/include --sbindir=/usr/sbin --enable-cxx11 \
+	   --mandir=/usr/share/man --docdir=/usr/share/doc/memkind
 
 override_dh_auto_build:
 	dh_auto_build -- checkprogs
+
+override_dh_auto_install:
+	dh_auto_install
+	rm -f debian/tmp/usr/lib/*/*.la
+	rm -f debian/tmp/usr/lib/*/libautohbw*
+	rm -rf debian/tmp/usr/share/doc/memkind
+	dh_install
+	dh_missing --fail-missing
 
 %:
 	dh $@

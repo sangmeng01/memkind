@@ -1,5 +1,5 @@
-memkind (0.0.0) UNRELEASED; urgency=low
+memkind (1.8~pre1-1) UNRELEASED; urgency=low
 
-  * See ChangeLog for more details
+  * Initial release.  Closes: #915021
 
- -- Krzysztof Kulakowski <krzysztof.kulakowski@intel.com>  Mon, 12 Dec 2016 15:53:31 +0000
+ -- Adam Borowski <kilobyte@angband.pl>  Fri, 30 Nov 2018 18:06:34 +0100
