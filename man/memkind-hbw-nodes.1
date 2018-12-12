@@ -1,5 +1,5 @@
 .\"
-.\" Copyright (C) 2016 - 2018 Intel Corporation.
+.\" Copyright (C) 2018 Intel Corporation.
 .\" All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
@@ -21,34 +21,27 @@
 .\" OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 .\" ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.TH "MEMKIND_INTERLEAVE" 3 "2016-02-19" "Intel Corporation" "MEMKIND_INTERLEAVE" \" -*- nroff -*-
+.TH "MEMKIND-HBW_NODES" 1 "2018-03-12" "Intel Corporation" "MEMKIND-HBW_NODES" \" -*- nroff -*-
 .SH "NAME"
-memkind_interleave.h \- interleave memory memkind operations.
+memkind-hbw-nodes - print comma separated list of high bandwidth nodes.
 .br
-Note: This is EXPERIMENTAL API. The functionality and the header file itself can be changed (including non-backward compatible changes) or removed.
+Note: This is EXPERIMENTAL API. The functionality and the header file itself can be changed (including non-backward compatible changes), or removed.
 .SH "SYNOPSIS"
-.nf
-.B #include <memkind/internal/memkind_interleave.h>
-.sp
-.B Link with -lmemkind
-.sp
-.BI "void memkind_interleave_init_once(void);"
-.br
-.SH DESCRIPTION
-.PP
-.BR memkind_interleave_init_once()
-initializes MEMKIND_INTERLEAVE kind and it should not be called more than once.
-.BR Note:
-.BR memkind_interleave_init_once ()
-may reserve some extra memory.
+memkind-hbw-nodes [-h|--help]
+.SH "DESCRIPTION"
+.BR memkind-hbw-nodes
+prints a comma separated list of high bandwidth NUMA nodes that can be used with the numactl --membind option.
+.SH "OPTIONS"
+.BR " -h, --help"
+              Display help text and exit.
+.SH "EXIT STATUS"
+.BR memkind-hbw-nodes
+exits with status 0 on success, 1 on failure, 2 on invalid argument.
 .SH "COPYRIGHT"
 Copyright (C) 2016 - 2018 Intel Corporation. All rights reserved.
 .SH "SEE ALSO"
+.BR hbwmalloc (3),
 .BR memkind (3),
-.BR memkind_arena (3),
-.BR memkind_default (3),
-.BR memkind_hbw (3),
-.BR memkind_pmem (3),
-.BR jemalloc (3),
-.BR mbind (2),
-.BR mmap (2)
+.BR numactl (8)
+.SH "AUTHOR"
+Krzysztof Kulakowski <krzysztof.kulakowski@intel.com>

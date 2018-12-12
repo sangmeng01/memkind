@@ -36,18 +36,18 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#define PMEM_MAX_SIZE (1024 * 1024 * 32)
-
 static char *PMEM_DIR = "/tmp/";
+static const size_t PMEM_PART_SIZE = MEMKIND_PMEM_MIN_SIZE + 4 * 1024;
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
-    struct memkind *pmem_kinds[10] = {NULL};
+    const size_t size = 512;
     struct memkind *pmem_kind = NULL;
-    struct memkind *pmem_kind_unlimited = NULL;
-
-    int err = 0, i = 0;
     struct stat st;
+    const int arraySize = 100;
+    char *ptr[100] = { NULL };
+    int i = 0;
+    int err = 0;
 
     if (argc > 2) {
         fprintf(stderr, "Usage: %s [pmem_kind_dir_path]", argv[0]);
@@ -62,12 +62,9 @@ int main(int argc, char *argv[])
     }
 
     fprintf(stdout,
-            "This example shows how to create and destroy pmem kind with defined or unlimited size."
-            "\nPMEM kind directory: %s\n",
-            PMEM_DIR);
+            "This example shows how to use memkind_free with unknown kind as a parameter.\n");
 
-    /* Create PMEM partition with specific size */
-    err = memkind_create_pmem(PMEM_DIR, PMEM_MAX_SIZE, &pmem_kind);
+    err = memkind_create_pmem(PMEM_DIR, PMEM_PART_SIZE, &pmem_kind);
     if (err) {
         perror("memkind_create_pmem()");
         fprintf(stderr, "Unable to create pmem partition err=%d errno=%d\n", err,
@@ -75,16 +72,39 @@ int main(int argc, char *argv[])
         return errno ? -errno : 1;
     }
 
-    /* Create PMEM partition with unlimited size */
-    err = memkind_create_pmem(PMEM_DIR, 0, &pmem_kind_unlimited);
-    if (err) {
-        perror("memkind_create_pmem()");
-        fprintf(stderr, "Unable to create pmem partition err=%d errno=%d\n", err,
-                errno);
-        return errno ? -errno : 1;
+    for (i = 0; i < arraySize; ++i) {
+        if (i < 50) {
+            ptr[i] = memkind_malloc(MEMKIND_DEFAULT, size);
+            if (ptr[i] == NULL) {
+                perror("memkind_malloc()");
+                fprintf(stderr, "Unable to allocate memkind default\n");
+                return errno ? -errno : 1;
+            }
+        } else {
+            ptr[i] = memkind_malloc(pmem_kind, size);
+            if (ptr[i] == NULL) {
+                perror("memkind_malloc()");
+                fprintf(stderr, "Unable to allocate pmem\n");
+                return errno ? -errno : 1;
+            }
+        }
+    }
+    fprintf(stdout,
+            "Memory was successfully allocated in default kind and pmem kind.\n");
+
+    sprintf(ptr[10], "Hello world from standard memory - ptr[10].\n");
+    sprintf(ptr[40], "Hello world from standard memory - ptr[40].\n");
+    sprintf(ptr[80], "Hello world from persistent memory - ptr[80].\n");
+
+    fprintf(stdout, "%s", ptr[10]);
+    fprintf(stdout, "%s", ptr[40]);
+    fprintf(stdout, "%s", ptr[80]);
+
+    fprintf(stdout, "Free memory without specifying kind.\n");
+    for (i = 0; i < arraySize; ++i) {
+        memkind_free(NULL, ptr[i]);
     }
 
-    /* and delete them */
     err = memkind_destroy_kind(pmem_kind);
     if (err) {
         perror("memkind_destroy_kind()");
@@ -92,35 +112,7 @@ int main(int argc, char *argv[])
         return errno ? -errno : 1;
     }
 
-    err = memkind_destroy_kind(pmem_kind_unlimited);
-    if (err) {
-        perror("memkind_destroy_kind()");
-        fprintf(stderr, "Unable to destroy pmem partition\n");
-        return errno ? -errno : 1;
-    }
-
-    /* Create many PMEM kinds */
-    for (i = 0; i < 10; i++) {
-        err = memkind_create_pmem(PMEM_DIR, PMEM_MAX_SIZE, &pmem_kinds[i]);
-        if (err) {
-            perror("memkind_create_pmem()");
-            fprintf(stderr, "Unable to create pmem partition err=%d errno=%d\n", err,
-                    errno);
-            return errno ? -errno : 1;
-        }
-    }
-
-    /* and delete them */
-    for (i = 0; i < 10; i++) {
-        err = memkind_destroy_kind(pmem_kinds[i]);
-        if (err) {
-            perror("memkind_pmem_destroy()");
-            fprintf(stderr, "Unable to destroy pmem partition\n");
-            return errno ? -errno : 1;
-        }
-    }
-
-    fprintf(stdout, "PMEM kinds have been successfully created and destroyed.");
+    fprintf(stdout, "Memory was successfully released.\n");
 
     return 0;
 }

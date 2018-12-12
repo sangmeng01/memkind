@@ -5,6 +5,7 @@ ChangeLog
 INSTALL
 Makefile.am
 NEWS
+PULL_REQUEST_TEMPLATE.md
 README
 .travis.yml
 astyle.sh
@@ -34,11 +35,13 @@ examples/pmem_alignment.c
 examples/pmem_and_default_kind.c
 examples/pmem_multithreads.c
 examples/pmem_multithreads_onekind.c
+examples/pmem_free_with_unknown_kind.c
 examples/pmem_cpp_allocator.cpp
 install_astyle.sh
 m4/ax_cxx_compile_stdcxx.m4
 m4/ax_cxx_compile_stdcxx_11.m4
 m4/ax_pthread.m4
+man/memkind-hbw-nodes.1
 man/hbwmalloc.3
 man/memkind.3
 man/memkind_arena.3
