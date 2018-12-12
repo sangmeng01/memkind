@@ -42,7 +42,9 @@ libmemkind.so.0 libmemkind0 #MINVER#
  memkind_arena_create@Base 1.7.0
  memkind_arena_create_map@Base 1.7.0
  memkind_arena_destroy@Base 1.7.0
+ memkind_arena_free@Base 1.8.0
  memkind_arena_malloc@Base 1.7.0
+ memkind_arena_pmem_calloc@Base 1.8.0
  memkind_arena_posix_memalign@Base 1.7.0
  memkind_arena_realloc@Base 1.7.0
  memkind_bijective_get_arena@Base 1.7.0
@@ -59,6 +61,7 @@ libmemkind.so.0 libmemkind0 #MINVER#
  memkind_default_get_mmap_flags@Base 1.7.0
  memkind_default_init_once@Base 1.7.0
  memkind_default_malloc@Base 1.7.0
+ memkind_default_malloc_usable_size@Base 1.8.0
  memkind_default_mbind@Base 1.7.0
  memkind_default_mmap@Base 1.7.0
  memkind_default_posix_memalign@Base 1.7.0
@@ -85,6 +88,7 @@ libmemkind.so.0 libmemkind0 #MINVER#
  memkind_interleave_get_mbind_mode@Base 1.7.0
  memkind_interleave_init_once@Base 1.7.0
  memkind_malloc@Base 1.7.0
+ memkind_malloc_usable_size@Base 1.8.0
  memkind_nohugepage_madvise@Base 1.7.0
  memkind_pmem_create@Base 1.7.0
  memkind_pmem_destroy@Base 1.7.0
