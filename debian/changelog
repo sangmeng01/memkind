@@ -1,5 +1,5 @@
-memkind (1.8~pre1-1) UNRELEASED; urgency=low
+memkind (1.8.0-1) unstable; urgency=low
 
-  * Initial release.  Closes: #915021
+  * Initial release.  Closes: #915021.
 
- -- Adam Borowski <kilobyte@angband.pl>  Fri, 30 Nov 2018 18:06:34 +0100
+ -- Adam Borowski <kilobyte@angband.pl>  Wed, 12 Dec 2018 13:58:07 +0100
