@@ -47,4 +47,4 @@ Description: user-extensible heap manager for heterogeneous memory platforms
  of the heap between kinds of memory.  While arbitrary user control is
  possible, built-in characteristics include NUMA and page size.
  .
- This package contains support programs that use libmemkind0.
+ This package contains support programs that use libmemkind.
