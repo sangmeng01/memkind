@@ -29,6 +29,7 @@ override_dh_auto_install:
 	rm -f debian/tmp/usr/lib/*/libautohbw*
 	rm -rf debian/tmp/usr/share/doc/memkind
 	dh_install
+	dh_installman
 	dh_missing --fail-missing
 
 %:
