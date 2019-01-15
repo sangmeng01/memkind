@@ -1,3 +1,10 @@
+memkind (1.8.0-2~wip1) UNRELEASED; urgency=medium
+
+  * Use system jemalloc.
+  * Don't use sse4.2 instructions (with no loss of speed!).
+
+ -- Adam Borowski <kilobyte@angband.pl>  Tue, 15 Jan 2019 14:12:02 +0100
+
 memkind (1.8.0-1) unstable; urgency=low
 
   * Initial release.  Closes: #915021.
