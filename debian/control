@@ -3,7 +3,7 @@ Section: utils
 Priority: optional
 Maintainer: Adam Borowski <kilobyte@angband.pl>
 Build-Depends: debhelper (>= 11~), libnuma-dev
-Standards-Version: 4.2.1
+Standards-Version: 4.3.0
 Rules-Requires-Root: no
 Homepage: https://github.com/memkind/memkind
 Vcs-Git: https://github.com/kilobyte/memkind.git -b debian
