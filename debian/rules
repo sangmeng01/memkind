@@ -17,7 +17,7 @@ override_dh_autoreconf:
 override_dh_auto_configure:
 	dh_auto_configure -- --prefix=/usr \
 	   --includedir=/usr/include --sbindir=/usr/sbin --enable-cxx11 \
-	   --mandir=/usr/share/man --docdir=/usr/share/doc/memkind --enable-tls
+	   --mandir=/usr/share/man --docdir=/usr/share/doc/memkind
 
 override_dh_auto_build:
 	dh_auto_build -- checkprogs
