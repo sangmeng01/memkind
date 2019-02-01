@@ -1,3 +1,12 @@
+memkind (1.8.0-2) unstable; urgency=medium
+
+  * Don't build with -msse4.2, it's not used anyway.  Closes: #919594.
+  * Avoid cpuid where inappropriate.
+  * Enable the testsuite (using a cherry-picked upstream patch to make it
+    runnable without fancy hardware).
+
+ -- Adam Borowski <kilobyte@angband.pl>  Fri, 01 Feb 2019 20:29:42 +0100
+
 memkind (1.8.0-1) unstable; urgency=low
 
   * Initial release.  Closes: #915021.
