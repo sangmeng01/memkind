@@ -6,8 +6,8 @@
 
 export JE_PREFIX=jemk_
 
-# tests need NUMA memory
 override_dh_auto_test:
+	+$(MAKE) unit_tests
 
 override_dh_autoreconf:
 	dpkg-parsechangelog -SVersion|cut -d- -f1 >VERSION
