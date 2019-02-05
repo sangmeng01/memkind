@@ -1,0 +1,25 @@
+#!/bin/bash
+set -e
+
+cp -p examples/*.{c,cpp,hpp} "$AUTOPKGTEST_TMP"/
+cd "$AUTOPKGTEST_TMP"
+
+for x in pmem_*.c
+  do
+    echo "=== $x ==="
+    if [ "x${x/thread//}" != "x$x" ]
+      then PTHREAD=-pthread
+      else PTHREAD=
+    fi
+    gcc -Wall "$x" -lmemkind $PTHREAD
+    ./a.out
+    echo
+  done
+
+for x in pmem_*.cpp
+  do
+    echo "=== $x ==="
+    g++ -Wall "$x" -lmemkind
+    ./a.out
+    echo
+  done
