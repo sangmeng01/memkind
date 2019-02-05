@@ -1,3 +1,4 @@
 no-sse4.2
 cpuid
 tests-nohw
+ac_lang_c++
