@@ -1,3 +1,12 @@
+memkind (1.8.0-3) unstable; urgency=medium
+
+  * Add autopkgtests (upstream's examples but not tests).
+  * Fix C++ configure flag detection (FTBFS on most archs).
+  * Use a more portable (ok, to glibc...) way to id threads.
+  * Drop 32-bit and non-Linux archs for now.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Thu, 07 Feb 2019 15:59:54 +0100
+
 memkind (1.8.0-2) unstable; urgency=medium
 
   * Don't build with -msse4.2, it's not used anyway.  Closes: #919594.
