@@ -10,7 +10,7 @@ Vcs-Git: https://github.com/kilobyte/memkind.git -b debian
 Vcs-Browser: https://github.com/kilobyte/memkind/tree/debian
 
 Package: libmemkind0
-Architecture: any
+Architecture: amd64 arm64 mips64el ppc64el s390x alpha ia64 ppc64 riscv64 sparc64
 Section: libs
 Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -23,7 +23,7 @@ Description: user-extensible heap manager for heterogeneous memory platforms
  This package contains the runtime library.
 
 Package: libmemkind-dev
-Architecture: any
+Architecture: amd64 arm64 mips64el ppc64el s390x alpha ia64 ppc64 riscv64 sparc64
 Section: libdevel
 Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}, libmemkind0 (= ${binary:Version})
@@ -37,7 +37,7 @@ Description: user-extensible heap manager for heterogeneous memory platforms
  libraries.
 
 Package: libmemkind-progs
-Architecture: any
+Architecture: amd64 arm64 mips64el ppc64el s390x alpha ia64 ppc64 riscv64 sparc64
 Section: admin
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}
