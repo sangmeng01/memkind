@@ -1,3 +1,10 @@
+memkind (1.8.0-4) unstable; urgency=medium
+
+  * --disable-secure to increase hardening.
+  * Drop archs with no NUMA: mips64el s390x alpha sparc64.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Tue, 26 Feb 2019 17:20:57 +0100
+
 memkind (1.8.0-3) unstable; urgency=medium
 
   * Add autopkgtests (upstream's examples but not tests).
