@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2018 Intel Corporation.
+ * Copyright (C) 2014 - 2019 Intel Corporation.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,7 +53,7 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_HBW_OPS = {
     .calloc = memkind_arena_calloc,
     .posix_memalign = memkind_arena_posix_memalign,
     .realloc = memkind_arena_realloc,
-    .free = heap_manager_free,
+    .free = memkind_arena_free,
     .check_available = memkind_hbw_check_available,
     .mbind = memkind_default_mbind,
     .get_mmap_flags = memkind_default_get_mmap_flags,
@@ -61,6 +61,7 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_HBW_OPS = {
     .get_mbind_nodemask = memkind_hbw_get_mbind_nodemask,
     .get_arena = memkind_thread_get_arena,
     .init_once = memkind_hbw_init_once,
+    .malloc_usable_size = memkind_default_malloc_usable_size,
     .finalize = memkind_arena_finalize
 };
 
@@ -71,7 +72,7 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_HBW_ALL_OPS = {
     .calloc = memkind_arena_calloc,
     .posix_memalign = memkind_arena_posix_memalign,
     .realloc = memkind_arena_realloc,
-    .free = heap_manager_free,
+    .free = memkind_arena_free,
     .check_available = memkind_hbw_check_available,
     .mbind = memkind_default_mbind,
     .get_mmap_flags = memkind_default_get_mmap_flags,
@@ -79,6 +80,7 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_HBW_ALL_OPS = {
     .get_mbind_nodemask = memkind_hbw_all_get_mbind_nodemask,
     .get_arena = memkind_thread_get_arena,
     .init_once = memkind_hbw_all_init_once,
+    .malloc_usable_size = memkind_default_malloc_usable_size,
     .finalize = memkind_arena_finalize
 };
 
@@ -89,7 +91,7 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_HBW_HUGETLB_OPS = {
     .calloc = memkind_arena_calloc,
     .posix_memalign = memkind_arena_posix_memalign,
     .realloc = memkind_arena_realloc,
-    .free = heap_manager_free,
+    .free = memkind_arena_free,
     .check_available = memkind_hbw_hugetlb_check_available,
     .mbind = memkind_default_mbind,
     .get_mmap_flags = memkind_hugetlb_get_mmap_flags,
@@ -97,6 +99,7 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_HBW_HUGETLB_OPS = {
     .get_mbind_nodemask = memkind_hbw_get_mbind_nodemask,
     .get_arena = memkind_thread_get_arena,
     .init_once = memkind_hbw_hugetlb_init_once,
+    .malloc_usable_size = memkind_default_malloc_usable_size,
     .finalize = memkind_arena_finalize
 };
 
@@ -107,7 +110,7 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_HBW_ALL_HUGETLB_OPS = {
     .calloc = memkind_arena_calloc,
     .posix_memalign = memkind_arena_posix_memalign,
     .realloc = memkind_arena_realloc,
-    .free = heap_manager_free,
+    .free = memkind_arena_free,
     .check_available = memkind_hbw_hugetlb_check_available,
     .mbind = memkind_default_mbind,
     .get_mmap_flags = memkind_hugetlb_get_mmap_flags,
@@ -115,6 +118,7 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_HBW_ALL_HUGETLB_OPS = {
     .get_mbind_nodemask = memkind_hbw_all_get_mbind_nodemask,
     .get_arena = memkind_thread_get_arena,
     .init_once = memkind_hbw_all_hugetlb_init_once,
+    .malloc_usable_size = memkind_default_malloc_usable_size,
     .finalize = memkind_arena_finalize
 };
 
@@ -125,7 +129,7 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_HBW_PREFERRED_OPS = {
     .calloc = memkind_arena_calloc,
     .posix_memalign = memkind_arena_posix_memalign,
     .realloc = memkind_arena_realloc,
-    .free = heap_manager_free,
+    .free = memkind_arena_free,
     .check_available = memkind_hbw_check_available,
     .mbind = memkind_default_mbind,
     .get_mmap_flags = memkind_default_get_mmap_flags,
@@ -133,6 +137,7 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_HBW_PREFERRED_OPS = {
     .get_mbind_nodemask = memkind_hbw_get_mbind_nodemask,
     .get_arena = memkind_thread_get_arena,
     .init_once = memkind_hbw_preferred_init_once,
+    .malloc_usable_size = memkind_default_malloc_usable_size,
     .finalize = memkind_arena_finalize
 };
 
@@ -143,7 +148,7 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_HBW_PREFERRED_HUGETLB_OPS = {
     .calloc = memkind_arena_calloc,
     .posix_memalign = memkind_arena_posix_memalign,
     .realloc = memkind_arena_realloc,
-    .free = heap_manager_free,
+    .free = memkind_arena_free,
     .check_available = memkind_hbw_hugetlb_check_available,
     .mbind = memkind_default_mbind,
     .get_mmap_flags = memkind_hugetlb_get_mmap_flags,
@@ -151,6 +156,7 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_HBW_PREFERRED_HUGETLB_OPS = {
     .get_mbind_nodemask = memkind_hbw_get_mbind_nodemask,
     .get_arena = memkind_thread_get_arena,
     .init_once = memkind_hbw_preferred_hugetlb_init_once,
+    .malloc_usable_size = memkind_default_malloc_usable_size,
     .finalize = memkind_arena_finalize
 };
 
@@ -161,7 +167,7 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_HBW_INTERLEAVE_OPS = {
     .calloc = memkind_arena_calloc,
     .posix_memalign = memkind_arena_posix_memalign,
     .realloc = memkind_arena_realloc,
-    .free = heap_manager_free,
+    .free = memkind_arena_free,
     .check_available = memkind_hbw_check_available,
     .mbind = memkind_default_mbind,
     .madvise = memkind_nohugepage_madvise,
@@ -170,6 +176,7 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_HBW_INTERLEAVE_OPS = {
     .get_mbind_nodemask = memkind_hbw_all_get_mbind_nodemask,
     .get_arena = memkind_thread_get_arena,
     .init_once = memkind_hbw_interleave_init_once,
+    .malloc_usable_size = memkind_default_malloc_usable_size,
     .finalize = memkind_arena_finalize
 };
 
@@ -310,6 +317,7 @@ inline static void cpuid_asm(int leaf, int subleaf, registers_t *registers)
                  "=c"(registers->ecx),
                  "=d"(registers->edx):"0"(leaf), "2"(subleaf));
 #else
+    // Non-x86 can't possibly be Knight's Landing nor Knight's Mill.
     registers->eax = 0;
 #endif
 }

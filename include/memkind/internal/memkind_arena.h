@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2018 Intel Corporation.
+ * Copyright (C) 2014 - 2019 Intel Corporation.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,7 @@ extern "C" {
  */
 
 struct memkind *get_kind_by_arena(unsigned arena_ind);
-
+struct memkind *memkind_arena_detect_kind(void *ptr);
 int memkind_arena_create(struct memkind *kind, struct memkind_ops *ops,
                          const char *name);
 int memkind_arena_create_map(struct memkind *kind, extent_hooks_t *hooks);
@@ -55,6 +55,7 @@ void *memkind_arena_pmem_calloc(struct memkind *kind, size_t num, size_t size);
 int memkind_arena_posix_memalign(struct memkind *kind, void **memptr,
                                  size_t alignment, size_t size);
 void *memkind_arena_realloc(struct memkind *kind, void *ptr, size_t size);
+void *memkind_arena_realloc_with_kind_detect(void *ptr, size_t size);
 int memkind_bijective_get_arena(struct memkind *kind, unsigned int *arena,
                                 size_t size);
 int memkind_thread_get_arena(struct memkind *kind, unsigned int *arena,
@@ -62,7 +63,10 @@ int memkind_thread_get_arena(struct memkind *kind, unsigned int *arena,
 int memkind_arena_finalize(struct memkind *kind);
 void memkind_arena_init(struct memkind *kind);
 void memkind_arena_free(struct memkind *kind, void *ptr);
-
+void memkind_arena_free_with_kind_detect(void *ptr);
+size_t memkind_arena_malloc_usable_size(void *ptr);
+int memkind_arena_update_memory_usage_policy(struct memkind *kind,
+                                             memkind_mem_usage_policy policy);
 #ifdef __cplusplus
 }
 #endif

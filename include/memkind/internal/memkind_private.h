@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 - 2018 Intel Corporation.
+ * Copyright (C) 2016 - 2019 Intel Corporation.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -71,9 +71,7 @@ extern "C" {
 #define jemk_free                   JE_SYMBOL(free)
 #define jemk_dallocx                JE_SYMBOL(dallocx)
 #define jemk_malloc_usable_size     JE_SYMBOL(malloc_usable_size)
-
-/// \note EXPERIMENTAL API
-int je_get_defrag_hint(void *ptr, int *bin_util, int *run_util);
+#define jemk_get_defrag_hint        JE_SYMBOL(get_defrag_hint)
 
 enum memkind_const_private {
     MEMKIND_NAME_LENGTH_PRIV = 64
@@ -100,7 +98,9 @@ struct memkind_ops {
     int (* check_addr)(struct memkind *kind, void *addr);
     void (* init_once)(void);
     int (* finalize)(struct memkind *kind);
-    size_t (* malloc_usable_size)(struct memkind *kind, void *addr);
+    size_t (* malloc_usable_size)(struct memkind *kind, void *ptr);
+    int (* update_memory_usage_policy)(struct memkind *kind,
+                                       memkind_mem_usage_policy policy);
 };
 
 struct memkind {
@@ -115,6 +115,12 @@ struct memkind {
     unsigned int
     arena_map_mask; // arena_map_len - 1 to optimize modulo operation on arena_map_len
     unsigned int arena_zero; // index first jemalloc arena of this kind
+};
+
+struct memkind_config {
+    const char *pmem_dir;            //PMEM kind path
+    size_t pmem_size;                //PMEM kind size
+    memkind_mem_usage_policy policy; //kind memory usage policy
 };
 
 void memkind_init(memkind_t kind, bool check_numa);

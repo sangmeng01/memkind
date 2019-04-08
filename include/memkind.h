@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2018 Intel Corporation.
+ * Copyright (C) 2014 - 2019 Intel Corporation.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -146,6 +146,57 @@ enum {
     MEMKIND_ERROR_RUNTIME = -255                /**<  Error: Unspecified run-time error */
 };
 
+/* KIND CONFIGURATION MANAGEMENT INTERFACE */
+
+/// \brief Memkind memory usage policy
+typedef enum memkind_mem_usage_policy {
+    MEMKIND_MEM_USAGE_POLICY_DEFAULT      = 0,        /**<  Default  memory usage  */
+    MEMKIND_MEM_USAGE_POLICY_CONSERVATIVE = 1,        /**<  Minimize memory usage at all costs, */
+    MEMKIND_MEM_USAGE_POLICY_MAX_VALUE
+} memkind_mem_usage_policy;
+
+/// \brief Forward declaration of memkind configuration
+struct memkind_config;
+
+///
+/// \brief Create a memkind configuration
+/// \note STANDARD API
+/// \return Memkind configuration, NULL on failure
+///
+struct memkind_config *memkind_config_new(void);
+
+///
+/// \brief Delete memkind configuration
+/// \note STANDARD API
+/// \param cfg memkind configuration
+///
+void memkind_config_delete(struct memkind_config *cfg);
+
+///
+/// \brief Update memkind configuration with path to specified directory parameter
+/// \note STANDARD API
+/// \param cfg memkind configuration
+/// \param pmem_dir path to specified directory for PMEM kind
+///
+void memkind_config_set_path(struct memkind_config *cfg, const char *pmem_dir);
+
+///
+/// \brief Update memkind configuration with PMEM kind size
+/// \note STANDARD API
+/// \param cfg memkind configuration
+/// \param pmem_size size limit for PMEM kind
+///
+void memkind_config_set_size(struct memkind_config *cfg, size_t pmem_size);
+
+///
+/// \brief Update memkind configuration with memory usage policy parameter
+/// \note STANDARD API
+/// \param cfg memkind configuration
+/// \param policy memkind memory usage policy
+///
+void memkind_config_set_memory_usage_policy(struct memkind_config *cfg,
+                                            memkind_mem_usage_policy policy);
+
 ///
 /// \brief Create kind that allocates memory with specific memory type, memory binding policy and flags.
 /// \warning EXPERIMENTAL API
@@ -182,6 +233,14 @@ int memkind_create_kind(memkind_memtype_t memtype_flags,
 ///
 int memkind_destroy_kind(memkind_t kind);
 
+///
+/// \brief Get kind associated with allocated memory refernced by ptr
+/// \warning STANDARD API
+/// \note This function has non-trivial performance overhead
+/// \param ptr pointer to the allocated memory
+/// \return Kind associated with allocated memory, NULL on failure
+///
+memkind_t memkind_detect_kind(void *ptr);
 
 #include "memkind_deprecated.h"
 
@@ -246,6 +305,16 @@ void memkind_error_message(int err, char *msg, size_t size);
 int memkind_create_pmem(const char *dir, size_t max_size, memkind_t *kind);
 
 ///
+/// \brief Create a new PMEM kind with given memkind configuration
+/// \note STANDARD API
+/// \param cfg memkind configuration for specifying PMEM parameters
+/// \param kind pointer to kind which will be created
+/// \return Memkind operation status, MEMKIND_SUCCESS on success, other values on failure
+///
+int memkind_create_pmem_with_config(struct memkind_config *cfg,
+                                    memkind_t *kind);
+
+///
 /// \brief Check if kind is available
 /// \note STANDARD API
 /// \param kind specified memory kind
@@ -284,6 +353,7 @@ size_t memkind_malloc_usable_size(memkind_t kind, void *ptr);
 ///
 void *memkind_calloc(memkind_t kind, size_t num, size_t size);
 
+///
 /// \brief Allocates size bytes of the specified kind and places the address of the allocated memory
 ///        in *memptr. The address of the allocated memory will be a multiple of alignment,
 ///        which must be a power of two and a multiple of sizeof(void *)

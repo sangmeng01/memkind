@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2018 Intel Corporation.
+ * Copyright (C) 2014 - 2019 Intel Corporation.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -22,7 +22,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #define MEMKIND_VERSION_MAJOR 1
-#define MEMKIND_VERSION_MINOR 8
+#define MEMKIND_VERSION_MINOR 9
 #define MEMKIND_VERSION_PATCH 0
 
 #include <memkind.h>
@@ -342,6 +342,11 @@ MEMKIND_EXPORT int memkind_destroy_kind(memkind_t kind)
     return err;
 }
 
+MEMKIND_EXPORT memkind_t memkind_detect_kind(void *ptr)
+{
+    return heap_manager_detect_kind(ptr);
+}
+
 /* Declare weak symbols for allocator decorators */
 extern void memkind_malloc_pre(struct memkind **,
                                size_t *) __attribute__((weak));
@@ -511,6 +516,17 @@ exit:
 }
 
 #ifdef __GNUC__
+__attribute__((constructor))
+#endif
+static void memkind_construct(void)
+{
+    const char *env = getenv("MEMKIND_HEAP_MANAGER");
+    if (env && strcmp(env, "TBB") == 0) {
+        load_tbb_symbols();
+    }
+}
+
+#ifdef __GNUC__
 __attribute__((destructor))
 #endif
 static int memkind_finalize(void)
@@ -554,12 +570,11 @@ MEMKIND_EXPORT int memkind_check_available(struct memkind *kind)
 MEMKIND_EXPORT size_t memkind_malloc_usable_size(struct memkind *kind,
                                                  void *ptr)
 {
-    size_t size = 0;
-
-    if (MEMKIND_LIKELY(kind->ops->malloc_usable_size)) {
-        size = kind->ops->malloc_usable_size(kind, ptr);
+    if (!kind) {
+        return heap_manager_malloc_usable_size(ptr);
+    } else {
+        return kind->ops->malloc_usable_size(kind, ptr);
     }
-    return size;
 }
 
 MEMKIND_EXPORT void *memkind_malloc(struct memkind *kind, size_t size)
@@ -639,15 +654,18 @@ MEMKIND_EXPORT void *memkind_realloc(struct memkind *kind, void *ptr,
 {
     void *result;
 
-    pthread_once(&kind->init_once, kind->ops->init_once);
-
 #ifdef MEMKIND_DECORATION_ENABLED
     if (memkind_realloc_pre) {
         memkind_realloc_pre(&kind, &ptr, &size);
     }
 #endif
 
-    result = kind->ops->realloc(kind, ptr, size);
+    if (!kind) {
+        result = heap_manager_realloc(ptr, size);
+    } else {
+        pthread_once(&kind->init_once, kind->ops->init_once);
+        result = kind->ops->realloc(kind, ptr, size);
+    }
 
 #ifdef MEMKIND_DECORATION_ENABLED
     if (memkind_realloc_post) {
@@ -666,7 +684,7 @@ MEMKIND_EXPORT void memkind_free(struct memkind *kind, void *ptr)
     }
 #endif
     if (!kind) {
-        heap_manager_free(kind, ptr);
+        heap_manager_free(ptr);
     } else {
         pthread_once(&kind->init_once, kind->ops->init_once);
         kind->ops->free(kind, ptr);
@@ -721,6 +739,36 @@ exit:
     return err;
 }
 
+MEMKIND_EXPORT struct memkind_config *memkind_config_new(void)
+{
+    struct memkind_config *cfg = (struct memkind_config *)jemk_malloc(sizeof(
+                                                                          struct memkind_config));
+    return cfg;
+}
+
+MEMKIND_EXPORT void memkind_config_delete(struct memkind_config *cfg)
+{
+    jemk_free(cfg);
+}
+
+MEMKIND_EXPORT void memkind_config_set_path(struct memkind_config *cfg,
+                                            const char *pmem_dir)
+{
+    cfg->pmem_dir = pmem_dir;
+}
+
+MEMKIND_EXPORT void memkind_config_set_size(struct memkind_config *cfg,
+                                            size_t pmem_size)
+{
+    cfg->pmem_size = pmem_size;
+}
+
+MEMKIND_EXPORT void memkind_config_set_memory_usage_policy(
+    struct memkind_config *cfg, memkind_mem_usage_policy policy)
+{
+    cfg->policy = policy;
+}
+
 MEMKIND_EXPORT int memkind_create_pmem(const char *dir, size_t max_size,
                                        struct memkind **kind)
 {
@@ -768,6 +816,18 @@ exit:
     errno = oerrno;
     return err;
 }
+
+MEMKIND_EXPORT int memkind_create_pmem_with_config(struct memkind_config *cfg,
+                                                   struct memkind **kind)
+{
+    int status = memkind_create_pmem(cfg->pmem_dir, cfg->pmem_size, kind);
+    if (MEMKIND_LIKELY(!status)) {
+        status = (*kind)->ops->update_memory_usage_policy(*kind, cfg->policy);
+    }
+
+    return status;
+}
+
 
 static int memkind_get_kind_by_partition_internal(int partition,
                                                   struct memkind **kind)

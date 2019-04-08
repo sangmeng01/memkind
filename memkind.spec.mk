@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014 - 2018 Intel Corporation.
+#  Copyright (C) 2014 - 2019 Intel Corporation.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -55,8 +55,10 @@ BuildRequires: numactl-devel
 
 Prefix: %{_prefix}
 Prefix: %{_unitdir}
+%if %{undefined suse_version}
 Obsoletes: memkind
 Provides: memkind libmemkind0
+%endif
 
 %define namespace memkind
 
@@ -66,15 +68,9 @@ Provides: memkind libmemkind0
 %define docdir %{_defaultdocdir}/%{namespace}-%{version}
 %endif
 
-# x86_64 is the only arch memkind will build due to its
-# current dependency on SSE4.2 CRC32 instruction which
-# is used to compute thread local storage arena mappings
-# with polynomial accumulations via GCC's intrinsic _mm_crc32_u64
-# For further info check:
-# - /lib/gcc/<target>/<version>/include/smmintrin.h
-# - https://gcc.gnu.org/bugzilla/show_bug.cgi?id=36095
-# - http://en.wikipedia.org/wiki/SSE4
-ExclusiveArch: x86_64
+# Upstream testing of memkind is done exclusively on x86_64; other archs
+# are unsupported but may work. aarch64 is known to be broken.
+ExclusiveArch: x86_64 ppc64 ppc64le s390x
 
 # default values if version is a tagged release on github
 %{!?commit: %define commit %{version}}
@@ -100,8 +96,10 @@ Feedback on design or implementation is greatly appreciated.
 Summary: Memkind User Extensible Heap Manager development lib and tools
 Group: Development/Libraries
 Requires: %{name} = %{version}-%{release}
+%if %{undefined suse_version}
 Obsoletes: memkind-devel
 Provides: memkind-devel
+%endif
 
 %description devel
 Install header files and development aids to link memkind library into
@@ -172,6 +170,7 @@ rm -f %{buildroot}/%{_libdir}/libautohbw.{l,}a
 %{_includedir}/pmem_allocator.h
 %{_libdir}/lib%{namespace}.so
 %{_libdir}/libautohbw.so
+%{_libdir}/pkgconfig/memkind.pc
 %{_includedir}/%{namespace}.h
 %{_includedir}/%{internal_include}
 %{_includedir}/%{internal_include}/%{namespace}*.h
@@ -204,6 +203,8 @@ ${memkind_test_dir}/pmem_malloc_unlimited
 ${memkind_test_dir}/pmem_usable_size
 ${memkind_test_dir}/pmem_alignment
 ${memkind_test_dir}/pmem_and_default_kind
+${memkind_test_dir}/pmem_config
+$(memkind_test_dir)/pmem_detect_kind
 ${memkind_test_dir}/pmem_multithreads
 ${memkind_test_dir}/pmem_multithreads_onekind
 $(memkind_test_dir)/pmem_free_with_unknown_kind
@@ -232,6 +233,7 @@ $(memkind_test_dir)/alloc_benchmark_hbw
 $(memkind_test_dir)/alloc_benchmark_glibc
 $(memkind_test_dir)/alloc_benchmark_tbb
 $(memkind_test_dir)/alloc_benchmark_pmem
+$(memkind_test_dir)/fragmentation_benchmark_pmem
 
 %exclude $(memkind_test_dir)/*.pyo
 %exclude $(memkind_test_dir)/*.pyc

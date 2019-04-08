@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 - 2018 Intel Corporation.
+ * Copyright (C) 2017 - 2019 Intel Corporation.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,16 +44,18 @@ bool (*pool_free)(void *, void *);
 int (*pool_create_v1)(intptr_t, const struct MemPoolPolicy *, void **);
 bool (*pool_destroy)(void *);
 void *(*pool_identify)(void *object);
+size_t (*pool_msize)(void *, void *);
 
 static void *tbb_handle = NULL;
+static bool TBBInitDone = false;
 
-static int load_tbb_symbols()
+void load_tbb_symbols(void)
 {
     const char so_name[]="libtbbmalloc.so.2";
     tbb_handle = dlopen(so_name, RTLD_LAZY);
     if(!tbb_handle) {
-        log_err("%s not found.", so_name);
-        return -1;
+        log_fatal("%s not found.", so_name);
+        abort();
     }
 
     pool_malloc = dlsym(tbb_handle, "_ZN3rml11pool_mallocEPNS_10MemoryPoolEm");
@@ -65,6 +67,7 @@ static int load_tbb_symbols()
                            "_ZN3rml14pool_create_v1ElPKNS_13MemPoolPolicyEPPNS_10MemoryPoolE");
     pool_destroy = dlsym(tbb_handle, "_ZN3rml12pool_destroyEPNS_10MemoryPoolE");
     pool_identify = dlsym(tbb_handle, "_ZN3rml13pool_identifyEPv");
+    pool_msize = dlsym(tbb_handle, "_ZN3rml10pool_msizeEPNS_10MemoryPoolEPv");
 
     if(!pool_malloc ||
        !pool_realloc ||
@@ -72,15 +75,12 @@ static int load_tbb_symbols()
        !pool_free ||
        !pool_create_v1 ||
        !pool_destroy ||
-       !pool_identify)
-
-    {
-        log_err("Could not find symbols in %s.", so_name);
+       !pool_identify ) {
+        log_fatal("Could not find symbols in %s.", so_name);
         dlclose(tbb_handle);
-        return -1;
+        abort();
     }
-
-    return 0;
+    TBBInitDone = true;
 }
 
 //Granularity of raw_alloc allocations
@@ -123,13 +123,48 @@ static void *tbb_pool_calloc(struct memkind *kind, size_t num, size_t size)
     return result;
 }
 
-static void *tbb_pool_realloc(struct memkind *kind, void *ptr, size_t size)
+static void *tbb_pool_common_realloc(void *pool, void *ptr, size_t size)
 {
-    if(size_out_of_bounds(size)) return NULL;
-    void *result = pool_realloc(kind->priv, ptr, size);
-    if (!result && size)
+    if (size_out_of_bounds(size)) {
+        pool_free(pool, ptr);
+        return NULL;
+    }
+    void *result = pool_realloc(pool, ptr, size);
+    if (!result)
         errno = ENOMEM;
     return result;
+}
+
+static void *tbb_pool_realloc(struct memkind *kind, void *ptr, size_t size)
+{
+    return tbb_pool_common_realloc(kind->priv, ptr, size);
+}
+
+void *tbb_pool_realloc_with_kind_detect(void *ptr, size_t size)
+{
+    if (!ptr) {
+        errno = EINVAL;
+        return NULL;
+    }
+    return tbb_pool_common_realloc(pool_identify(ptr), ptr, size);
+}
+
+struct memkind *tbb_detect_kind(void *ptr)
+{
+    if (!ptr) {
+        return NULL;
+    }
+    struct memkind *kind = NULL;
+    unsigned i;
+    void *pool = pool_identify(ptr);
+    for (i = 0; i < MEMKIND_MAX_KIND; ++i) {
+        int err = memkind_get_kind_by_partition(i, &kind);
+        if (!err && kind->priv == pool) {
+            break;
+        }
+    }
+
+    return kind;
 }
 
 static int tbb_pool_posix_memalign(struct memkind *kind, void **memptr,
@@ -139,7 +174,10 @@ static int tbb_pool_posix_memalign(struct memkind *kind, void **memptr,
     if(!alignment && (0 != (alignment & (alignment-sizeof(void *))))) return EINVAL;
     //Check if alignment is "a power of 2".
     if(alignment & (alignment-1)) return EINVAL;
-    if(size_out_of_bounds(size)) return ENOMEM;
+    if(size_out_of_bounds(size)) {
+        *memptr = NULL;
+        return 0;
+    }
     void *result = pool_aligned_malloc(kind->priv, size, alignment);
     if (!result) {
         return ENOMEM;
@@ -148,19 +186,47 @@ static int tbb_pool_posix_memalign(struct memkind *kind, void **memptr,
     return 0;
 }
 
-void tbb_pool_free(struct memkind *kind, void *ptr)
+void tbb_pool_free_with_kind_detect(void *ptr)
 {
-    if(kind) {
-        pool_free(kind->priv, ptr);
-    } else {
+    if (ptr) {
         pool_free(pool_identify(ptr), ptr);
     }
 }
 
-static size_t tbb_pool_usable_size(struct memkind *kind, void *ptr)
+static void tbb_pool_free(struct memkind *kind, void *ptr)
 {
-    log_err("memkind_malloc_usable_size() is not supported by TBB.");
-    return 0;
+    pool_free(kind->priv, ptr);
+}
+
+static size_t tbb_pool_common_malloc_usable_size(void *pool, void *ptr)
+{
+    if (pool_msize) {
+        return pool_msize(pool, ptr);
+    } else {
+        log_err("memkind_malloc_usable_size() is not supported by this TBB version.");
+        return 0;
+    }
+}
+
+static size_t tbb_pool_malloc_usable_size(struct memkind *kind, void *ptr)
+{
+    return tbb_pool_common_malloc_usable_size(kind->priv, ptr);
+}
+
+size_t tbb_pool_malloc_usable_size_with_kind_detect(void *ptr)
+{
+    size_t size = 0;
+    if (ptr) {
+        size = tbb_pool_common_malloc_usable_size(pool_identify(ptr), ptr);
+    }
+    return size;
+}
+
+static int tbb_update_memory_usage_policy(struct memkind *kind,
+                                          memkind_mem_usage_policy policy)
+{
+    log_info("Memkind memory usage policies have no effect in TBB manager.");
+    return MEMKIND_SUCCESS;
 }
 
 static int tbb_destroy(struct memkind *kind)
@@ -177,7 +243,7 @@ static int tbb_destroy(struct memkind *kind)
 
 void tbb_initialize(struct memkind *kind)
 {
-    if(!kind || load_tbb_symbols()) {
+    if(!kind || !TBBInitDone) {
         log_fatal("Failed to initialize TBB.");
         abort();
     }
@@ -204,5 +270,6 @@ void tbb_initialize(struct memkind *kind)
     kind->ops->realloc = tbb_pool_realloc;
     kind->ops->free = tbb_pool_free;
     kind->ops->finalize = tbb_destroy;
-    kind->ops->malloc_usable_size = tbb_pool_usable_size;
+    kind->ops->malloc_usable_size = tbb_pool_malloc_usable_size;
+    kind->ops->update_memory_usage_policy = tbb_update_memory_usage_policy;
 }

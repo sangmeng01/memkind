@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Intel Corporation.
+ * Copyright (C) 2017 - 2019 Intel Corporation.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,11 +30,23 @@
 extern "C" {
 #endif
 
+/* dynamically load TBB symbols */
+void load_tbb_symbols(void);
+
 /* ops callbacks are replaced by TBB callbacks. */
 void tbb_initialize(struct memkind *kind);
 
 /* ptr pointer must come from the valid TBB pool allocation */
-void tbb_pool_free(struct memkind *kind, void *ptr);
+void tbb_pool_free_with_kind_detect(void *ptr);
+
+/* ptr pointer must come from the valid TBB pool allocation */
+void *tbb_pool_realloc_with_kind_detect(void *ptr, size_t size);
+
+/* ptr pointer must come from the valid TBB pool allocation */
+size_t tbb_pool_malloc_usable_size_with_kind_detect(void *ptr);
+
+/* ptr pointer must come from the valid TBB pool allocation */
+struct memkind *tbb_detect_kind(void *ptr);
 
 #ifdef __cplusplus
 }
