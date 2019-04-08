@@ -1,3 +1,13 @@
+memkind (1.9.0-1) experimental; urgency=medium
+
+  * New upstream release.
+  * Drop all patches -- merged upstream.
+  * Use dh level 12.
+  * Don't claim to support arm64 riscv64 in this version.
+    (Note: s390x could be ok, but requires a newer kernel for tests.)
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 08 Apr 2019 18:15:40 +0200
+
 memkind (1.8.0-4) unstable; urgency=medium
 
   * --disable-secure to increase hardening.
