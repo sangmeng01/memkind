@@ -42,20 +42,32 @@ libmemkind.so.0 libmemkind0 #MINVER#
  memkind_arena_create@Base 1.7.0
  memkind_arena_create_map@Base 1.7.0
  memkind_arena_destroy@Base 1.7.0
+ memkind_arena_detect_kind@Base 1.9.0
  memkind_arena_free@Base 1.8.0
+ memkind_arena_free_with_kind_detect@Base 1.9.0
  memkind_arena_malloc@Base 1.7.0
+ memkind_arena_malloc_usable_size@Base 1.9.0
  memkind_arena_pmem_calloc@Base 1.8.0
  memkind_arena_posix_memalign@Base 1.7.0
  memkind_arena_realloc@Base 1.7.0
+ memkind_arena_realloc_with_kind_detect@Base 1.9.0
+ memkind_arena_update_memory_usage_policy@Base 1.9.0
  memkind_bijective_get_arena@Base 1.7.0
  memkind_calloc@Base 1.7.0
  memkind_check_available@Base 1.7.0
+ memkind_config_delete@Base 1.9.0
+ memkind_config_new@Base 1.9.0
+ memkind_config_set_memory_usage_policy@Base 1.9.0
+ memkind_config_set_path@Base 1.9.0
+ memkind_config_set_size@Base 1.9.0
  memkind_create_kind@Base 1.7.0
  memkind_create_pmem@Base 1.7.0
+ memkind_create_pmem_with_config@Base 1.9.0
  memkind_default_calloc@Base 1.7.0
  memkind_default_create@Base 1.7.0
  memkind_default_destroy@Base 1.7.0
  memkind_default_free@Base 1.7.0
+ memkind_default_get_defrag_hint@Base 1.9.0
  memkind_default_get_mbind_mode@Base 1.7.0
  memkind_default_get_mbind_nodemask@Base 1.7.0
  memkind_default_get_mmap_flags@Base 1.7.0
@@ -67,6 +79,7 @@ libmemkind.so.0 libmemkind0 #MINVER#
  memkind_default_posix_memalign@Base 1.7.0
  memkind_default_realloc@Base 1.7.0
  memkind_destroy_kind@Base 1.7.0
+ memkind_detect_kind@Base 1.9.0
  memkind_error_message@Base 1.7.0
  memkind_free@Base 1.7.0
  memkind_get_kind_by_partition@Base 1.7.0
