@@ -1,3 +1,10 @@
+memkind (1.9.0-2) unstable; urgency=medium
+
+  * Revert to dh level 11, to ease backports on Ubuntu.
+  * Re-enable s390x but skip tests (it's a runtime kernel issue).
+
+ -- Adam Borowski <kilobyte@angband.pl>  Tue, 16 Apr 2019 11:54:15 +0200
+
 memkind (1.9.0-1) experimental; urgency=medium
 
   * New upstream release.
