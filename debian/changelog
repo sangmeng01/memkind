@@ -1,3 +1,13 @@
+memkind (1.10~pre1-1) experimental; urgency=medium
+
+  * New upstream git snapshot.
+  * Temporarily enable all arches, to see what got fixed.
+  * Update symbols; two deletions were experimental stuff.
+  * Cope with upstream build system changes.
+  * Disable an autopkgtest that requires a /dev/dax.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Wed, 18 Dec 2019 19:06:58 +0100
+
 memkind (1.9.0-2) unstable; urgency=medium
 
   * Revert to dh level 11, to ease backports on Ubuntu.
