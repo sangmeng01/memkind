@@ -28,10 +28,6 @@ memkind_default \- default implementations for memkind operations.
 .BR Note:
 This is EXPERIMENTAL API. The functionality and the header file itself can be changed (including non-backward compatible changes), or removed.
 .SH "SYNOPSIS"
-.nf
-.B #include <memkind/internal/memkind_default.h>
-.sp
-.B Link with -lmemkind
 .sp
 .BI "int memkind_default_create(struct memkind " "*kind" ", struct memkind_ops " "*ops" ", const char " "*name" );
 .br
@@ -68,8 +64,6 @@ This is EXPERIMENTAL API. The functionality and the header file itself can be ch
 .BI "int memkind_default_get_mbind_nodemask(struct memkind " "*kind" ", unsigned long " "*nodemask" ", unsigned long " "maxnode" );
 .br
 .BI "void memkind_default_init_once(void);"
-.br
-.BI "int memkind_default_get_defrag_hint(void " "*ptr" ", int " "*bin_util" ", int " "*run_util" );
 .br
 .BI "bool size_out_of_bounds(size_t " "size" );
 .br
@@ -216,13 +210,6 @@ This function copies body of the bitmask structure into passed pointer.
 .PP
 .BR memkind_default_init_once ()
 initializes heap manager.
-.PP
-.BR memkind_default_get_defrag_hint ()
-is a direct call through the jemalloc's
-.BR get_defrag_hint ().
-If
-.BR get_defrag_hint ()
-is not supported function returns -1.
 .PP
 .BR size_out_of_bounds ()
 returns true if given size is out of bounds, otherwise will return false.

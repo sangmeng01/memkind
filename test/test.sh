@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#  Copyright (C) 2014 - 2018 Intel Corporation.
+#  Copyright (C) 2014 - 2019 Intel Corporation.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,7 @@ PROGNAME=`basename $0`
 TEST_PATH="$basedir/"
 
 # Gtest binaries executed by Berta
-GTEST_BINARIES=(all_tests decorator_test allocator_perf_tool_tests gb_page_tests_bind_policy)
+GTEST_BINARIES=(all_tests decorator_test allocator_perf_tool_tests gb_page_tests_bind_policy memkind_stat_test defrag_allocate)
 
 # Pytest files executed by Berta
 PYTEST_FILES=(hbw_detection_test.py autohbw_test.py trace_mechanism_test.py)
@@ -45,7 +45,7 @@ err=0
 function usage () {
    cat <<EOF
 
-Usage: $PROGNAME [-c csv_file] [-l log_file] [-f test_filter] [-T tests_dir] [-d] [-m] [-p] [-x] [-s] [-h]
+Usage: $PROGNAME [-c csv_file] [-l log_file] [-f test_filter] [-T tests_dir] [-d] [-m] [-p] [-e] [-x] [-s] [-h]
 
 OPTIONS
     -c,
@@ -62,6 +62,8 @@ OPTIONS
         skip tests that require 2MB pages configured on the machine
     -p,
         skip python tests
+    -e,
+        run only HBW performance operation tests
     -x,
         skip tests that are passed as value
     -s,
@@ -213,29 +215,63 @@ function execute_pytest()
     return $ret
 }
 
-numactl --hardware | grep "^node 1" > /dev/null
-if [ $? -ne 0 ]; then
-    echo "ERROR: $0 requires a NUMA enabled system with more than one node."
-    exit 1
-fi
+#Check support for numa nodes (at least two)
+function check_numa()
+{
+    numactl --hardware | grep "^node 1" > /dev/null
+    if [ $? -ne 0 ]; then
+        echo "ERROR: $0 requires a NUMA enabled system with more than one node."
+        exit 1
+    fi
+}
 
-if [ ! -f /usr/bin/memkind-hbw-nodes ]; then
+#Check support for High Bandwidth Memory - simulate one if no one was found
+function check_hbw_nodes()
+{
+    if [ ! -f /usr/bin/memkind-hbw-nodes ]; then
         if [ -x ./memkind-hbw-nodes ]; then
-                export PATH=$PATH:$PWD
+            export PATH=$PATH:$PWD
         else
-                echo "Cannot find 'memkind-hbw-nodes' in $PWD. Did you run 'make'?"
-                exit 1
+            echo "Cannot find 'memkind-hbw-nodes' in $PWD. Did you run 'make'?"
+            exit 1
         fi
-fi
-ret=$(memkind-hbw-nodes)
-if [[ $ret == "" ]]; then
-    export MEMKIND_HBW_NODES=1
-    TEST_PREFIX="numactl --membind=0 --cpunodebind=$MEMKIND_HBW_NODES %s"
-fi
+    fi
+
+    ret=$(memkind-hbw-nodes)
+    if [[ $ret == "" ]]; then
+        export MEMKIND_HBW_NODES=1
+        TEST_PREFIX="numactl --membind=0 --cpunodebind=$MEMKIND_HBW_NODES %s"
+    fi
+}
+
+#Check automatic support for persistent memory NUMA node - simulate one if no one was found
+function check_auto_dax_kmem_nodes()
+{
+    if [ ! -f /usr/bin/memkind-auto-dax-kmem-nodes ]; then
+        if [ -x ./memkind-auto-dax-kmem-nodes ]; then
+            export PATH=$PATH:$PWD
+        else
+            echo "Cannot find 'memkind-auto-dax-kmem-nodes' in $PWD. Did you run 'make'?"
+            exit 1
+        fi
+    fi
+
+    ret=$(memkind-auto-dax-kmem-nodes)
+    if [[ $ret == "" ]]; then
+        export MEMKIND_DAX_KMEM_NODES=1
+    fi
+}
+
+#begin of main script
+
+check_numa
+
+check_hbw_nodes
+check_auto_dax_kmem_nodes
 
 OPTIND=1
 
-while getopts "T:c:f:l:hdmsx:p:" opt; do
+while getopts "T:c:f:l:hdemsx:p:" opt; do
     case "$opt" in
         T)
             TEST_PATH=$OPTARG;
@@ -272,6 +308,11 @@ while getopts "T:c:f:l:hdmsx:p:" opt; do
             fi
             show_skipped_tests "test_TC_MEMKIND_hbw_detection"
             ;;
+        e)
+            GTEST_BINARIES=(performance_test)
+            SKIPPED_PYTESTS=$SKIPPED_PYTESTS$PYTEST_FILES
+            break;
+            ;;
         p)
             SKIPPED_PYTESTS=$SKIPPED_PYTESTS$OPTARG
             show_skipped_tests "$OPTARG"
@@ -292,6 +333,7 @@ while getopts "T:c:f:l:hdmsx:p:" opt; do
             ;;
         h)
             usage;
+            exit 0;
             ;;
     esac
 done

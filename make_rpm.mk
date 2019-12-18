@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014 - 2016 Intel Corporation.
+#  Copyright (C) 2014 - 2019 Intel Corporation.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -50,6 +50,7 @@ test/python_framework/cmd_helper.py \
 test/python_framework/huge_page_organizer.py \
 test/python_framework/__init__.py \
 test/hbw_detection_test.py \
+test/dax_kmem_env_var_test.py \
 test/autohbw_test.py \
 test/trace_mechanism_test.py \
 test/draw_plots.py \
@@ -75,7 +76,7 @@ $(source_tar): $(topdir)/.setup $(src) MANIFEST
 		mkdir -p `dirname $(source_tmp_dir)/$(name)-$(version)/$$f` ; \
 		cp $$f $(source_tmp_dir)/$(name)-$(version)/$$f ; \
 	done
-	cd $(source_tmp_dir)/$(name)-$(version) && ./autogen.sh && (cd ./jemalloc && ./autogen.sh) && ./configure && make dist; \
+	cd $(source_tmp_dir)/$(name)-$(version) && ./autogen.sh && ./configure && make dist; \
 	# tar.gz produced by "make dist" from above produces memkind-$(version).tar.gz
 	# If $(package_prefix) is not empty, then need to repackage that tar.gz to $(name)-$(version)
 	# thus below command. Otherwise, rpmbuild will fail.

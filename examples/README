@@ -40,6 +40,11 @@ This example shows how to use multithreading with independent pmem kinds.
 
 This example shows how to use multithreading with one main pmem kind.
 
+### pmem_and_dax_kmem_kind.c
+
+This example shows how to allocate to PMEM memory using file-backed memory (pmem kind)
+and persistent memory NUMA node (MEMKIND_DAX_KMEM).
+
 ### pmem_and_default_kind.c
 
 This example shows how to allocate in standard memory and file-backed memory (pmem kind).
@@ -64,12 +69,23 @@ kind with different data structures like: vector, list and map.
 
 ## Other memkind examples
 
+### memkind_get_stat.c
+
+This example shows how to get information about allocator and kind statistics.
+
+### other
+
 The simplest example is the hello_example.c which is a hello world
 variant.  The filter_example.c shows how you would use high bandwidth
 memory to store a reduction of a larger data set stored in DDR. There is
 also an example of how to create user defined kinds.  This example
 creates kinds which isolate allocations to a single NUMA node each
 backed by a single arena.
+
+### memkind_cpp_allocator.cpp
+
+This example shows usage of C++ allocator mechanism designed for static
+kinds with different data structures like: forward list, deque and multiset.
 
 The memkind_allocated example is simple usage of memkind in C++11 which
 shows how memkind can be used to allocate objects, and consists of two files:

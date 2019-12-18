@@ -22,6 +22,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <memkind/internal/memkind_arena.h>
 #include <memkind/internal/memkind_default.h>
 #include <memkind/internal/memkind_private.h>
 #include <memkind/internal/memkind_log.h>
@@ -35,9 +36,17 @@
 #include <jemalloc/jemalloc.h>
 #include <stdint.h>
 
+#include "config.h"
+
 #ifndef MADV_NOHUGEPAGE
 #define MADV_NOHUGEPAGE 15
 #endif
+
+static int memkind_default_get_kind_stat(struct memkind *kind,
+                                         memkind_stat_type stat, size_t *value)
+{
+    return memkind_arena_get_stat_with_check_init(kind, stat, true, value);
+}
 
 MEMKIND_EXPORT struct memkind_ops MEMKIND_DEFAULT_OPS = {
     .create = memkind_default_create,
@@ -49,7 +58,9 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_DEFAULT_OPS = {
     .free = memkind_default_free,
     .init_once = memkind_default_init_once,
     .malloc_usable_size = memkind_default_malloc_usable_size,
-    .finalize = memkind_default_destroy
+    .finalize = memkind_default_destroy,
+    .get_stat = memkind_default_get_kind_stat,
+    .defrag_reallocate = memkind_arena_defrag_reallocate
 };
 
 MEMKIND_EXPORT int memkind_default_create(struct memkind *kind,
@@ -119,13 +130,6 @@ MEMKIND_EXPORT size_t memkind_default_malloc_usable_size(struct memkind *kind,
 {
     return jemk_malloc_usable_size(ptr);
 }
-
-MEMKIND_EXPORT int memkind_default_get_defrag_hint(void *ptr, int *bin_util,
-                                                   int *run_util)
-{
-    return jemk_get_defrag_hint(ptr,bin_util,run_util);
-}
-
 
 MEMKIND_EXPORT void *memkind_default_mmap(struct memkind *kind, void *addr,
                                           size_t size)

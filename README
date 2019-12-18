@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/memkind/memkind.svg)](https://travis-ci.org/memkind/memkind)
 [![MEMKIND version](https://img.shields.io/github/tag/memkind/memkind.svg)](https://github.com/memkind/memkind/releases/latest)
 [![Coverage Status](http://codecov.io/github/memkind/memkind/coverage.svg?branch=master)](http://codecov.io/gh/memkind/memkind?branch=master)
+[![Packaging status](https://repology.org/badge/tiny-repos/memkind.svg)](https://repology.org/project/memkind/versions)
 
 The memkind library is a user extensible heap manager built on top of
 jemalloc which enables control of memory characteristics and a
@@ -21,53 +22,47 @@ features.  Memkind interface allows to create and control file-backed memory
 ## Contents
 
 1. [Interfaces](#interfaces)
-2. [Building](#building)
-	* [Build Prerequisites](#build-prerequisites)
+2. [Dependencies](#dependencies)
+3. [Building and Installing](#building-and-installing)
 	* [jemalloc](#jemalloc)
-	* [memkind library](#memkind-library)
-3. [Run Requirements](#run-requirements)
-	* [Dependencies](#dependencies)
-	* [Kernel](#kernel)
-4. [PMEM Kind Usage](#pmem-kind-usage)
-5. [The Detection Mechanism of the Kind](#the-detection-mechanism-of-the-kind)
-6. [Setting Logging Mechanism](#setting-logging-mechanism)
-7. [Setting Heap Manager](#setting-heap-manager)
-8. [Testing](#testing)
-9. [Simulating High Bandwidth Memory](#simulating-high-bandwidth-memory)
-10. [Notes](#notes)
-11. [Status](#status)
-12. [Disclaimer](#disclaimer)
+4. [Run Requirements](#run-requirements)
+5. [Kind Requirements](#kind-requirements)
+6. [Kernel](#kernel)
+7. [NVDIMM volatile usage](#nvdimm-volatile-usage)
+	* [DAX device](#dax-device)
+	* [DAX filesystem](#dax-filesystem)
+8. [The Detection Mechanism of the Kind](#the-detection-mechanism-of-the-kind)
+9. [Setting Logging Mechanism](#setting-logging-mechanism)
+10. [Setting Heap Manager](#setting-heap-manager)
+11. [Testing](#testing)
+12. [Simulating High Bandwidth Memory](#simulating-high-bandwidth-memory)
+13. [Notes](#notes)
+14. [Status](#status)
+15. [Disclaimer](#disclaimer)
 
 ## Interfaces
-The memkind library delivers two interfaces:
+The memkind library delivers four interfaces:
  * hbwmalloc.h - recommended for high-bandwidth memory use cases (stable)
  * memkind.h - generic interface for more complex use cases (stable)
+ * pmem_allocator.h - the C++ allocator that satisfies the C++ Allocator
+   [requirements](https://en.cppreference.com/w/cpp/named_req/Allocator)
+   used for PMEM memory use cases (stable)
+ * memkind_allocator.h - the C++ allocator that satisfies the C++ Allocator
+   [requirements](https://en.cppreference.com/w/cpp/named_req/Allocator)
+   used for static kinds (stable)
 
 For more detailed information about those interfaces see
 corresponding manpages (located in man/ subdir):
 
     man memkind
 
-or
-
     man hbwmalloc
 
-## Building
-The memkind library has a dependency on a related fork of jemalloc.
-Building and installing memkind in standard system location can be as simple as
-typing the following while in the root directory of the source tree:
+    man pmemallocator
 
-    ./build.sh
-    make install
+    man memkindallocator
 
-To install this library into **other locations**, you can use the prefix variable, e.g.:
-
-    ./build.sh prefix=/usr/
-    make install
-
-This will install files to /usr/lib, /usr/include, /usr/share/doc/, usr/share/man.
-
-## Build Prerequisites
+## Dependencies
 
 You will need to install required packages on the build system:
 
@@ -79,83 +74,79 @@ You will need to install required packages on the build system:
 * **numactl-devel**
 * **unzip**
 
+For using automatic recognition of PMEM NUMA in MEMKIND_DAX_KMEM:
+
+* **libdaxctl-devel** (v66 or later)
+
+## Building and Installing
+
+The memkind library has a dependency on a related fork of jemalloc.
 The configure scripts and gtest source code are distributed with the
 source tarball included in the source RPM, and this tarball is created
-with the memkind "make dist" target.  In contrast to the distributed source
+with the memkind "make dist" target. In contrast to the distributed source
 tarball, the git repository does not include any generated files.
 For this reason some additional steps are required when building
-from a checkout of the git repo.  Those steps include running
+from a checkout of the git repo. Those steps include running
 the bash script called "autogen.sh" prior to configure.  This script
 will populate a VERSION file based on "git describe", and use
 autoreconf to generate a configure script.
 
-## jemalloc
-The jemalloc source was forked from jemalloc version 5.0.  This source tree
-is located within the jemalloc subdirectory of the memkind source.  The jemalloc
-source code has been kept close to the original form, and in particular
-the build system has been lightly modified.
-The developer must configure and build jemalloc prior to configuring
-and building memkind.  You can do that using included shell script:
+Building and installing memkind in standard system location can be as simple as
+typing the following while in the root directory of the source tree:
 
-    export JE_PREFIX=jemk_
-    ./build_jemalloc.sh
-
-To configure and build jemalloc, you can follow this step-by-step instruction:
-
-    cd jemalloc
-    autoconf
-    mkdir obj
-    cd obj
-    ../configure --enable-autogen --with-jemalloc-prefix=jemk_ --without-export \
-                 --with-version=5.0.0-0-g0 --disable-fill --disable-initial-exec-tls \
-                 --with-malloc-conf="narenas:256,lg_tcache_max:12"
-    make
-    cd ../..
-
-**Note:**
-
-JE_PREFIX can be set to arbitrary value, including empty one.
-
-## memkind library
-
-To configure, build and install memkind, you can follow this step-by-step instruction:
-
-    export JE_PREFIX=jemk_
     ./autogen.sh
     ./configure
     make
     make install
 
+To install this library into **other locations**, you can use the prefix variable, e.g.:
+
+    ./autogen.sh
+    ./configure --prefix=/usr
+    make
+    make install
+
+This will install files to /usr/lib, /usr/include, /usr/share/doc/, usr/share/man.
+
 See the output of:
 
     ./configure --help
 
-for more information about either the memkind or the jemalloc
-configuration options.  Some useful information about building with autotools
-can also be found in the [INSTALL](INSTALL) file.
+for more information about either the memkind or the jemalloc configuration options.
 
-**Important Notes:**
-
-If you are using build.sh script and later want to call 'make' command directly,
-then you need to call firstly:
-
-    export JE_PREFIX=jemk_
-
-otherwise you will get an error like:
-
-    undefined reference to mallocx
+## jemalloc
+The jemalloc source was forked from jemalloc version 5.2.1.  This source tree
+is located within the jemalloc subdirectory of the memkind source.  The jemalloc
+source code has been kept close to the original form, and in particular
+the build system has been lightly modified.
 
 ## Run Requirements
-Applications which are using the memkind library need to satisfy
-prerequisite requirements described below.
 
-## Dependencies
 You will need to install required packages for applications,
 which are using the memkind library for dynamic linking at run time:
 
 * **libnuma**
 * **numactl**
 * **pthread**
+
+## Kind Requirements
+
+| Memory kind                   | NUMA  |  HBW Memory | Hugepages | Device DAX | Filesystem supporting hole punching |
+| ----------------------------- |:-----:|:-----------:|:---------:|:----------:|:-----------------------------------:|
+| MEMKIND_DEFAULT               |       |             |           |            |                                     |
+| MEMKIND_HUGETLB               | X     | X           | X         |            |                                     |
+| MEMKIND_HBW                   | X     | X           |           |            |                                     |
+| MEMKIND_HBW_ALL               | X     | X           |           |            |                                     |
+| MEMKIND_HBW_HUGETLB           | X     | X           | X         |            |                                     |
+| MEMKIND_HBW_ALL_HUGETLB       | X     | X           | X         |            |                                     |
+| MEMKIND_HBW_PREFERRED         | X     | X           |           |            |                                     |
+| MEMKIND_HBW_PREFERRED_HUGETLB | X     | X           | X         |            |                                     |
+| MEMKIND_HBW_INTERLEAVE        | X     | X           |           |            |                                     |
+| MEMKIND_REGULAR               | X     |             |           |            |                                     |
+| MEMKIND_DAX_KMEM              | X     |             |           | X          |                                     |
+| MEMKIND_DAX_KMEM_ALL          | X     |             |           | X          |                                     |
+| MEMKIND_DAX_KMEM_PREFERRED    | X     |             |           | X          |                                     |
+| PMEM kind                     |       |             |           |            | X                                   |
 
 ## Kernel
 To correctly control of NUMA, huge pages and file-backed memory following
@@ -182,16 +173,113 @@ Without them physical memory may end up being located on incorrect NUMA node.
 To use the interfaces for obtaining 2MB pages please be sure to follow the instructions
 [here](https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt) and pay particular
 attention to the use of the procfs files:
+
     /proc/sys/vm/nr_hugepages
     /proc/sys/vm/nr_overcommit_hugepages
+
 for enabling the kernel's huge page pool.
 
-* **PMEM kind**
+* **Filesystem supporting hole punching**
 
 To use the PMEM kind, please be sure that filesystem which is used for PMEM creation supports
 [FALLOC_FL_PUNCH_HOLE](http://man7.org/linux/man-pages/man2/fallocate.2.html) flag.
 
-## PMEM Kind Usage
+* **Device DAX**
+
+To use MEMKIND_DAX_KMEM_* kinds you need at least Linux Kernel 5.1 (with enabled DEV_DAX_KMEM Kernel option) and created DAX device.
+If you have loaded dax_pmem_compat module instead of dax_pmem, please read
+[this](https://pmem.io/ndctl/daxctl-migrate-device-model.html) article and migrate device model
+to use alternative device dax drivers, e.g. kmem.
+
+If you want to migrate device model type:
+
+    daxctl migrate-device-model
+
+To create a new DAX device you can type:
+
+    ndctl create-namespace --mode=devdax --map=mem
+
+To display a list of created devices:
+
+    ndctl list
+
+If you have already created device in another mode, you can reconfigure the device using:
+
+    ndctl create-namespace --mode=devdax --map=mem --force -e namespaceX.Y
+
+Where namespaceX.Y means namespace you want to reconfigure.
+
+For more details about creating new namespace read [this](https://pmem.io/ndctl/ndctl-create-namespace.html).
+
+Conversion from device dax to NUMA node can be performed using following commands:
+
+    daxctl reconfigure-device daxX.Y --mode=system-ram
+
+Where daxX.Y is DAX device you want to reconfigure.
+
+This will migrate device from device_dax to kmem driver. After this step daxctl should be able to
+see devices in system-ram mode:
+
+    daxctl list
+
+Example output after reconfigure dax2.0 as system-ram:
+
+    [
+      {
+        "chardev":"dax1.0",
+        "size":263182090240,
+        "target_node":3,
+        "mode":"devdax"
+      },
+      {
+        "chardev":"dax2.0",
+        "size":263182090240,
+        "target_node":4,
+        "mode":"system-ram"
+      }
+    ]
+
+Also you should be able to check new NUMA node configuration by:
+
+    numactl -H
+
+Example output, where NUMA node 4 is NUMA node created from persistent memory:
+
+    available: 3 nodes (0-1,4)
+    node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83
+    node 0 size: 192112 MB
+    node 0 free: 185575 MB
+    node 1 cpus: 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111
+    node 1 size: 193522 MB
+    node 1 free: 193107 MB
+    node 4 cpus:
+    node 4 size: 250880 MB
+    node 4 free: 250879 MB
+    node distances:
+    node   0   1   4
+      0:  10  21  17
+      1:  21  10  28
+      4:  17  28  10
+
+## NVDIMM volatile usage
+
+Memkind supports using persistent memory as an extension of DRAM.
+This volatile memory solution is provided by the library with two seperate ways described below.
+
+## DAX device
+
+NVDIMM memory as DAX device is supported by MEMKIND_DAX_KMEM_* kinds. With this solution
+peristent memory will be seen in OS as seperate NUMA nodes.
+
+Memkind allows two ways to use this kind:
+
+- first implicitly, by allowing memkind library for automatic recognition of NUMA nodes
+created from persistent memory using [libdaxctl-devel](#dependencies)
+- secondary explicitly, by using MEMKIND_DAX_KMEM_NODES environment variable set to
+comma separated list of NUMA nodes which will be treated as NUMA nodes created from persistent memory,
+this solution overrides the first one
+
+## DAX filesystem
 PMEM kind supports the traditional malloc/free interfaces on a memory mapped file.
 This allows the use of [persistent memory](https://pmem.io/)
 as volatile memory, for cases where the region of persistent memory
@@ -204,7 +292,8 @@ Application using memkind library supports managing a data placement:
 
 | Data placement | Memory kind               |
 |----------------|---------------------------|
-| PMEM           | PMEM kind                 |
+| PMEM (fsdax)   | PMEM kind                 |
+| PMEM (devdax)  | MEMKIND_DAX_KMEM kind     |
 | DRAM           | e.g. MEMKIND_DEFAULT kind |
 
 Currently, the PMEM kind is supported only by the jemalloc heap manager.
@@ -212,11 +301,12 @@ Currently, the PMEM kind is supported only by the jemalloc heap manager.
 ## The Detection Mechanism of the Kind
 One of the notable features of the memkind is to detect the correct kind of previously allocated memory.
 
-| Operations                             | Memkind API function                  |
-|----------------------------------------|---------------------------------------|
-| Freeing memory                         | memkind_free(kind, ptr)               |
-| Reallocating memory                    | memkind_realloc(kind, ptr, size)      |
-| Obtaining the size of allocated memory | memkind_malloc_usable_size(kind, ptr) |
+| Operations                                  | Memkind API function                   |
+|---------------------------------------------|----------------------------------------|
+| Freeing memory                              | memkind_free(kind, ptr)                |
+| Reallocating memory                         | memkind_realloc(kind, ptr, size)       |
+| Obtaining the size of allocated memory      | memkind_malloc_usable_size(kind, ptr)  |
+| Reallocating memory to reduce fragmentation | memkind_defrag_reallocate(kind, ptr)   |
 
 Operations above could be unified for all used memory kinds
 by passing a NULL value as a kind to the functions mentioned above.

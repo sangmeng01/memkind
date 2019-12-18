@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 - 2018 Intel Corporation.
+ * Copyright (C) 2016 - 2019 Intel Corporation.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,14 +32,14 @@
 const char *help_message =
     "\n"
     "NAME\n"
-    "    memkind-hbw-nodes - Print comma separated list of high bandwidth nodes.\n"
+    "    memkind-hbw-nodes - Prints comma-separated list of high bandwidth nodes.\n"
     "\n"
     "SYNOPSIS\n"
     "    memkind-hbw-nodes -h | --help\n"
-    "        Print this help message.\n"
+    "        Prints this help message.\n"
     "\n"
     "DESCRIPTION\n"
-    "    Prints a comma separated list of high bandwidth NUMA nodes\n"
+    "    Prints a comma-separated list of high bandwidth NUMA nodes\n"
     "    that can be used with the numactl --membind option.\n"
     "\n"
     "EXIT STATUS\n"
@@ -66,6 +66,11 @@ int print_hbw_nodes()
 
     nodemask_t nodemask;
     struct bitmask nodemask_bm = {NUMA_NUM_NODES, nodemask.n};
+
+    // ensuring functions in numa library are defined
+    if (numa_available() == -1) {
+        return 3;
+    }
     numa_bitmask_clearall(&nodemask_bm);
 
     //WARNING: code below is usage of memkind experimental API which may be changed in future

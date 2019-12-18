@@ -41,7 +41,6 @@
 #include <numa.h>
 #include <pthread.h>
 #include <dirent.h>
-#include <jemalloc/jemalloc.h>
 
 MEMKIND_EXPORT struct memkind_ops MEMKIND_HUGETLB_OPS = {
     .create = memkind_arena_create,
@@ -56,7 +55,9 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_HUGETLB_OPS = {
     .get_arena = memkind_thread_get_arena,
     .init_once = memkind_hugetlb_init_once,
     .malloc_usable_size = memkind_default_malloc_usable_size,
-    .finalize = memkind_arena_finalize
+    .finalize = memkind_arena_finalize,
+    .get_stat = memkind_arena_get_kind_stat,
+    .defrag_reallocate = memkind_arena_defrag_reallocate
 };
 
 static int get_nr_overcommit_hugepages_cached(size_t pagesize, size_t *out);
@@ -75,7 +76,7 @@ MEMKIND_EXPORT int memkind_hugetlb_get_mmap_flags(struct memkind *kind,
 
 MEMKIND_EXPORT void memkind_hugetlb_init_once(void)
 {
-    memkind_init(MEMKIND_HUGETLB, false);
+    memkind_init(MEMKIND_HUGETLB, true);
 }
 
 MEMKIND_EXPORT int memkind_hugetlb_check_available_2mb(struct memkind *kind)
@@ -139,18 +140,16 @@ static pthread_once_t memkind_hugepages_config_once_g = PTHREAD_ONCE_INIT;
 
 static struct hugepage_size_info *allocate_hugepage_size_info()
 {
-    struct hugepage_size_info *newInfo = jemk_malloc(sizeof(
-                                                         struct hugepage_size_info));
+    struct hugepage_size_info *newInfo = malloc(sizeof(struct hugepage_size_info));
     if(newInfo == NULL) {
-        log_err("jemk_malloc() failed.");
+        log_err("malloc() failed.");
         return NULL;
     }
 
-    newInfo->nr_hugepages_per_node_array = jemk_calloc(NUMA_NUM_NODES,
-                                                       sizeof(size_t));
+    newInfo->nr_hugepages_per_node_array = calloc(NUMA_NUM_NODES, sizeof(size_t));
     if(newInfo->nr_hugepages_per_node_array == NULL) {
-        jemk_free(newInfo);
-        log_err("jemk_calloc() failed.");
+        free(newInfo);
+        log_err("calloc() failed.");
         return NULL;
     }
 
@@ -247,12 +246,12 @@ static void hugepages_config_init_once()
     }
 
     unsigned hugepages_info_array_len = 2; //initial size of array
-    hugepages_info_array = jemk_malloc(hugepages_info_array_len * sizeof(
-                                           struct hugepage_size_info *));
+    hugepages_info_array = malloc(hugepages_info_array_len * sizeof(
+                                      struct hugepage_size_info *));
     if (hugepages_info_array == NULL) {
         memkind_hugepages_config.err = MEMKIND_ERROR_MALLOC;
         closedir(hugepages_sysfs);
-        log_err("jemk_malloc() failed.");
+        log_err("malloc() failed.");
         return;
     }
 
@@ -270,12 +269,12 @@ static void hugepages_config_init_once()
             //there is more hugepage sizes than expected, reallocation of array needed
             if(i == hugepages_info_array_len) {
                 hugepages_info_array_len *= 2;
-                struct hugepage_size_info **swap_tmp = jemk_realloc(hugepages_info_array,
-                                                                    hugepages_info_array_len * sizeof(struct hugepage_size_info *));
+                struct hugepage_size_info **swap_tmp = realloc(hugepages_info_array,
+                                                               hugepages_info_array_len * sizeof(struct hugepage_size_info *));
                 if(swap_tmp == NULL) {
-                    jemk_free(new_hugepage_info);
+                    free(new_hugepage_info);
                     memkind_hugepages_config.err = MEMKIND_ERROR_MALLOC;
-                    log_err("jemk_realloc() failed.");
+                    log_err("realloc() failed.");
                     break;
                 }
                 hugepages_info_array = swap_tmp;
@@ -293,9 +292,9 @@ static void hugepages_config_init_once()
         memkind_hugepages_config.hugepages_info_array_len = i;
     } else {
         for(j=0; j<i; j++) {
-            jemk_free(hugepages_info_array[i]);
+            free(hugepages_info_array[i]);
         }
-        jemk_free(hugepages_info_array);
+        free(hugepages_info_array);
     }
 
     return;
@@ -308,9 +307,9 @@ static void destroy_hugepages_per_node()
 {
     int i;
     for(i=0; i<memkind_hugepages_config.hugepages_info_array_len; i++) {
-        jemk_free(memkind_hugepages_config.hugepages_info_array[i]);
+        free(memkind_hugepages_config.hugepages_info_array[i]);
     }
-    jemk_free(memkind_hugepages_config.hugepages_info_array);
+    free(memkind_hugepages_config.hugepages_info_array);
 }
 
 // helper function that find and return hugepage_size_info object for specified pagesize

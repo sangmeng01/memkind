@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 - 2018 Intel Corporation.
+ * Copyright (C) 2015 - 2019 Intel Corporation.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,10 +25,6 @@
 #pragma once
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-#ifndef MEMKIND_INTERNAL_API
-#warning "DO NOT INCLUDE THIS FILE! IT IS INTERNAL MEMKIND API AND SOON WILL BE REMOVED FROM BIN & DEVEL PACKAGES"
 #endif
 
 #include <memkind.h>
@@ -58,6 +54,7 @@ struct memkind_pmem {
     off_t offset;
     size_t max_size;
     pthread_mutex_t pmem_lock;
+    size_t current_size;
 };
 
 extern struct memkind_ops MEMKIND_PMEM_OPS;

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#  Copyright (C) 2016 - 2019 Intel Corporation.
+#  Copyright (C) 2019 Intel Corporation.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -22,14 +22,30 @@
 #  OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-EXTRA_CONF=$@
+#
+# docker_run_test.sh - is called inside a Docker container;
+# runs specified memkind tests
+#
+# Parameters:
+# -heap manager
+set -e
 
-cd jemalloc
-test -e configure || autoconf
-test -e obj || mkdir obj
-cd obj
-../configure --enable-autogen --with-jemalloc-prefix=$JE_PREFIX --without-export \
-             --with-version=5.0.0-0-g0 --disable-fill --disable-initial-exec-tls \
-             $EXTRA_CONF --with-malloc-conf="narenas:256,lg_tcache_max:12"
+HEAP_MANAGER=$1
 
-make -j`nproc`
+if [ "$TEST_SUITE_NAME" = "HBW" ]; then
+    # running tests and display output in case of failure
+    make check || { cat test-suite.log; exit 1; }
+elif [ "$TEST_SUITE_NAME" = "PMEM" ]; then
+    make PMEM_PATH="$PMEM_CONTAINER_PATH" unit_tests_pmem
+    # running pmem examples
+    find examples/.libs -name "pmem*" -executable -type f -exec sh -c "MEMKIND_HEAP_MANAGER=$HEAP_MANAGER "{}" $PMEM_CONTAINER_PATH" \;
+elif [ "$TEST_SUITE_NAME" = "DAX_KMEM" ]; then
+    make unit_tests_dax_kmem
+else
+    echo "Unknown Test suite ${TEST_SUITE_NAME}"
+fi;
+
+# executing coverage script if codecov token is set
+if [ -n "$CODECOV_TOKEN" ]; then
+    "$UTILS_PREFIX"/docker_run_coverage.sh "$PWD"
+fi

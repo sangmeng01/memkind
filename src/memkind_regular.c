@@ -33,13 +33,14 @@ static struct bitmask *regular_nodes_mask = NULL;
 
 static void regular_nodes_init(void)
 {
-    int i, node = 0, nodes_num = numa_num_configured_nodes();
+    unsigned i;
+    unsigned nodes_num = (unsigned)numa_num_configured_nodes();
     struct bitmask *node_cpus = numa_allocate_cpumask();
 
     regular_nodes_mask = numa_allocate_nodemask();
 
     for (i = 0; i < nodes_num; i++) {
-        numa_node_to_cpus(node, node_cpus);
+        numa_node_to_cpus(i, node_cpus);
         if (numa_bitmask_weight(node_cpus))
             numa_bitmask_setbit(regular_nodes_mask, i);
     }
@@ -100,7 +101,9 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_REGULAR_OPS = {
     .get_arena = memkind_thread_get_arena,
     .init_once = memkind_regular_init_once,
     .malloc_usable_size = memkind_default_malloc_usable_size,
-    .finalize = memkind_regular_finalize
+    .finalize = memkind_regular_finalize,
+    .get_stat = memkind_arena_get_kind_stat,
+    .defrag_reallocate = memkind_arena_defrag_reallocate
 };
 
 

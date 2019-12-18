@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 - 2018 Intel Corporation.
+ * Copyright (C) 2016 - 2019 Intel Corporation.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,6 +24,7 @@
 
 #include <memkind/internal/memkind_log.h>
 
+#include <assert.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <stdarg.h>
@@ -49,7 +50,7 @@ static bool log_enabled;
 static pthread_once_t init_once = PTHREAD_ONCE_INIT;
 static void log_init_once(void)
 {
-    char *memkind_debug_env= getenv("MEMKIND_DEBUG");
+    char *memkind_debug_env = secure_getenv("MEMKIND_DEBUG");
 
     if (memkind_debug_env) {
         if(strcmp(memkind_debug_env, "1") == 0) {
@@ -67,11 +68,13 @@ static void log_generic(message_type_t type, const char *format, va_list args)
 {
     pthread_once(&init_once, log_init_once);
     if(log_enabled || (type == MESSAGE_TYPE_FATAL)) {
-        pthread_mutex_lock(&log_lock);
+        if (pthread_mutex_lock(&log_lock) != 0)
+            assert(0 && "failed to acquire mutex");
         fprintf(stderr, "%s: ", message_prefixes[type]);
         vfprintf(stderr, format, args);
         fprintf(stderr, "\n");
-        pthread_mutex_unlock(&log_lock);
+        if (pthread_mutex_unlock(&log_lock) != 0)
+            assert(0 && "failed to release mutex");
     }
 }
 

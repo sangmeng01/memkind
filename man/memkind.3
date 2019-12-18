@@ -64,6 +64,8 @@ This header expose STANDARD and EXPERIMENTAL API. API Standards are described be
 .br
 .BI "size_t memkind_malloc_usable_size(memkind_t " "kind" ", void " "*ptr" );
 .br
+.BI "void *memkind_defrag_reallocate(memkind_t " "kind" ", void " "*ptr" );
+.br
 .BI "memkind_t memkind_detect_kind(void " "*ptr" );
 .sp
 .B "KIND CONFIGURATION MANAGEMENT:"
@@ -87,6 +89,12 @@ This header expose STANDARD and EXPERIMENTAL API. API Standards are described be
 .BI "int memkind_destroy_kind(memkind_t " "kind" );
 .br
 .BI "int memkind_check_available(memkind_t " "kind" );
+.sp
+.B "STATISTICS:"
+.br
+.BI "int memkind_update_cached_stats(void);"
+.br
+.BI "int memkind_get_stat(memkind_t " "kind" ", memkind_stat " "stat" ", size_t " "*value" );
 .sp
 .B "DECORATORS:"
 .br
@@ -221,7 +229,8 @@ if not
 must have been returned by a previous call to
 .BR memkind_malloc (),
 .BR memkind_calloc (),
-.BR memkind_realloc ()
+.BR memkind_realloc (),
+.BR memkind_defrag_reallocate ()
 or
 .BR memkind_posix_memalign ()
 with the same
@@ -234,12 +243,12 @@ was called before, undefined behavior occurs.
 In cases where the kind is unknown in the
 context of the call to
 .BR memkind_realloc ()
-.IR "NULL" ,
+.I NULL
 can be given as the
 .I kind
 specified to
 .BR memkind_realloc (),
-but this will require a internal look up for correct kind.
+but this will require an internal look up for correct kind.
 .BR Note:
 The look up for
 .I kind
@@ -296,7 +305,7 @@ but operates on specified
 In cases where the kind is unknown in the
 context of the call to
 .BR memkind_malloc_usable_size ()
-.IR "NULL" ,
+.I NULL
 can be given as the
 .I kind
 specified to
@@ -307,6 +316,39 @@ is supported by TBB heap manager described in
 .B ENVIRONMENT
 section since Intel TBB 2019 Update 4.
 .PP
+.BR memkind_defrag_reallocate ()
+reallocates the object conditonally inside specific
+.IR "kind" .
+Function determines if it's worthwhile to move allocation to reduce degree of external fragmentation of the heap.
+In case of failure function returns
+.IR "NULL" ,
+otherwise function returns a pointer to reallocated memory and memory referenced by
+.I ptr
+was released and should not be accessed.
+If
+.I ptr
+is
+.IR "NULL" ,
+then
+.BR memkind_defrag_reallocate ()
+returns
+.IR "NULL" .
+In cases where the kind is unknown in the
+context of the call to
+.BR memkind_defrag_reallocate ()
+.I NULL
+can be given as the
+.I kind
+specified to
+.BR memkind_defrag_reallocate (),
+but this will require an internal look up for correct kind.
+.BR Note:
+The look up for
+.I kind
+could result in serious performance penalty,
+which can be avoided by specifying a correct
+.IR kind .
+.PP
 .BR memkind_detect_kind ()
 returns the kind associated with allocated memory referenced by
 .IR ptr .
@@ -314,7 +356,8 @@ This pointer
 must have been returned by a previous call to
 .BR memkind_malloc (),
 .BR memkind_calloc (),
-.BR memkind_realloc ()
+.BR memkind_realloc (),
+.BR memkind_defrag_reallocate ()
 or
 .BR memkind_posix_memalign ().
 If
@@ -335,7 +378,8 @@ to be made available for future allocations. This pointer
 must have been returned by a previous call to
 .BR memkind_malloc (),
 .BR memkind_calloc (),
-.BR memkind_realloc ()
+.BR memkind_realloc (),
+.BR memkind_defrag_reallocate ()
 or
 .BR memkind_posix_memalign ().
 Otherwise, if
@@ -349,12 +393,12 @@ no operation is performed.
 In cases where the kind is unknown in the
 context of the call to
 .BR memkind_free ()
-.IR "NULL" ,
+.I NULL
 can be given as the
 .I kind
 specified to
 .BR memkind_free (),
-but this will require a internal look up for correct kind.
+but this will require an internal look up for correct kind.
 .BR Note:
 The look up for
 .I kind
@@ -524,6 +568,38 @@ section if it is not.
 .BR MEMKIND_PMEM_MIN_SIZE
 The minimum size which allows to limit the file-backed memory partition.
 .sp
+.B "STATISTICS:"
+.br
+The functions described in this section define a way to get specific memory allocation statistics.
+.PP
+.BR memkind_update_cached_stats ()
+is used to force an update of cached dynamic allocator statistics.
+Statistics are not updated real-time by memkind library and this method allows to force its update.
+.PP
+.BR memkind_get_stat ()
+retrieves statistic of the specified type
+and returns it in
+.IR "value".
+For more details about
+.I stat
+see the
+.B "MEMORY STATISTICS TYPE"
+section below.
+Measured statistic applies
+to specific
+.IR "kind",
+when
+.I NULL
+is given as
+.I kind
+then statistic applies to memory used by the whole memkind library.
+.BR Note:
+You need to call
+.BR memkind_update_cached_stats ()
+before calling
+.BR memkind_get_stat ()
+because statistics are cached by memkind library.
+.sp
 .B "DECORATORS:"
 .br
 The memkind library enables the user to define decorator functions that
@@ -577,9 +653,10 @@ API standards:
 .sp
 .SH "RETURN VALUE"
 .BR memkind_calloc (),
-.BR memkind_malloc ()
-and
+.BR memkind_malloc (),
 .BR memkind_realloc ()
+and
+.BR memkind_defrag_reallocate ()
 returns the pointer to the allocated memory or
 .I NULL
 if the request fails.
@@ -632,7 +709,7 @@ Allocate pages interleaved across all NUMA nodes with transparent huge
 pages disabled.
 .TP
 .B MEMKIND_HBW
-Allocate from the closest high bandwidth memory NUMA node at time
+Allocate from the closest high bandwidth memory NUMA node at the time
 of allocation. If there is not enough high bandwidth memory to satisfy the request
 .I errno
 is set to
@@ -709,6 +786,34 @@ except that the pages that support the allocation are interleaved
 across all high bandwidth nodes and transparent huge pages are
 disabled.
 .TP
+.B MEMKIND_DAX_KMEM
+Allocate from the closest persistent memory NUMA node at the time
+of allocation. If there is not enough memory in the closest persistent memory NUMA node to satisfy the request
+.I errno
+is set to
+.B ENOMEM
+and the allocated pointer is set to
+.IR "NULL" .
+.TP
+.B MEMKIND_DAX_KMEM_ALL
+Allocate from the closest persistent memory NUMA node available at the time
+of allocation. If there is not enough memory on any of persistent memory NUMA nodes to satisfy the request
+.I errno
+is set to
+.B ENOMEM
+and the allocated pointer is set to
+.IR "NULL" .
+.TP
+.B MEMKIND_DAX_KMEM_PREFERRED
+Same as
+.B MEMKIND_DAX_KMEM
+except that if there is not enough memory in the closest persistent memory NUMA node to satisfy
+the request, the allocation will fall back on other memory NUMA nodes.
+.BR Note:
+For this kind, the allocation will not succeed if two or more
+persistent memory NUMA nodes are in the same shortest distance to the same CPU on which process is eligible to run.
+Check on that eligibility is done upon starting the application.
+.TP
 .B MEMKIND_REGULAR
 Allocate from regular memory using the default page size. Regular means general purpose memory
 from the NUMA nodes containing CPUs.
@@ -771,6 +876,17 @@ Conservative memory usage policy - prioritize memory usage at cost of performanc
 Memory usage policies have no effect for TBB heap manager described in
 .B ENVIRONMENT
 section.
+.SH "MEMORY STATISTICS TYPE"
+The available types of memory statistics:
+.TP
+.B MEMKIND_STAT_TYPE_RESIDENT
+Maximum number of bytes in physically resident data pages mapped.
+.TP
+.B MEMKIND_STAT_TYPE_ACTIVE
+Total number of bytes in active pages.
+.TP
+.B MEMKIND_STAT_TYPE_ALLOCATED
+Total number of allocated bytes.
 .SH "ERRORS"
 .TP
 .BR memkind_posix_memalign ()
@@ -850,12 +966,25 @@ Unspecified run-time error
 .SH "FILES"
 .TP
 .I /usr/bin/memkind-hbw-nodes
-Prints a comma separated list of high bandwidth nodes.
+Prints a comma-separated list of high bandwidth nodes.
+.TP
+.I /usr/bin/memkind-auto-dax-kmem-nodes
+Prints a comma-separated list of persistent memory NUMA nodes, which are automatically detected.
 .SH "ENVIRONMENT"
 .TP
 .B MEMKIND_HBW_NODES
-This environment variable is a comma separated list of NUMA nodes that
+This environment variable is a comma-separated list of NUMA nodes that
 are treated as high bandwidth. Uses the
+.I libnuma
+routine
+.BR numa_parse_nodestring ()
+for parsing, so the syntax described in the
+.BR numa (3)
+man page for this routine applies: e.g. 1-3,5 is a valid setting.
+.TP
+.B MEMKIND_DAX_KMEM_NODES
+This environment variable is a comma-separated list of NUMA nodes that
+are treated as PMEM memory. Uses the
 .I libnuma
 routine
 .BR numa_parse_nodestring ()
@@ -880,7 +1009,7 @@ of
 for more details about arenas.
 .TP
 .B MEMKIND_HOG_MEMORY
-Controls behavior of memkind with regards to returning memory to underlaying OS. Setting
+Controls behavior of memkind with regards to returning memory to underlying OS. Setting
 .B MEMKIND_HOG_MEMORY
 to 1 causes memkind to not release memory to OS in anticipation of memory reuse soon. This will
 improve latency of 'free' operations but increase memory usage.
@@ -890,6 +1019,14 @@ Controls logging mechanism in memkind. Setting
 .B MEMKIND_DEBUG
 to 1 enables printing messages like errors and general information about environment to
 .IR stderr .
+.TP
+.B MEMKIND_BACKGROUND_THREAD_LIMIT
+Enable background worker threads.
+Value should be from range 0 to maximum number of cpus.
+Setting
+.B MEMKIND_BACKGROUND_THREAD_LIMIT
+to specific value will limit maximum number of background worker threads to this value.
+0 means maximum number of background worker threads will be limited to maximum number of cpus.
 .TP
 .B MEMKIND_HEAP_MANAGER
 Controls heap management behavior in memkind library by switching to one of the available heap managers.
@@ -905,7 +1042,7 @@ If the
 .B MEMKIND_HEAP_MANAGER
 is not set then the jemalloc heap manager will be used by default.
 .SH "SYSTEM CONFIGURATION"
-Interfaces for obtaining 2MB (HUGETLB) need allocated
+Interfaces for obtaining 2MB (HUGETLB) memory need allocated
 huge pages in the kernel's huge page pool.
 .TP
 .B HUGETLB (huge pages)
@@ -947,6 +1084,7 @@ Copyright (C) 2014 - 2019 Intel Corporation. All rights reserved.
 .BR mmap (2),
 .BR move_pages (2),
 .BR jemalloc (3),
+.BR memkind_dax_kmem (3),
 .BR memkind_default (3),
 .BR memkind_arena (3),
 .BR memkind_hbw (3),

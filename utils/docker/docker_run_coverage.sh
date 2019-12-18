@@ -26,12 +26,10 @@
 # calculates coverage and creates online report
 #
 # Parameters:
-# -codecov token
 # -memkind repository directory
 # Options used:
 # -p dir       Project root directory
 # -Z           Exit with 1 if not successful. Default will Exit with 0
 
-CODECOV_TOKEN=$1
-MEMKIND_REPO_PATH=$2
-bash <(curl -s https://codecov.io/bash) -t "$CODECOV_TOKEN" -p "$MEMKIND_REPO_PATH" -Z
+MEMKIND_REPO_PATH=$1
+bash <(curl -s https://codecov.io/bash) -t "$CODECOV_TOKEN" -cF "$TEST_SUITE_NAME" -p "$MEMKIND_REPO_PATH" -Z

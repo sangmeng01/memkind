@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 - 2018 Intel Corporation.
+ * Copyright (C) 2015 - 2019 Intel Corporation.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,14 +31,13 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <jemalloc/jemalloc.h>
 #include <assert.h>
 
 MEMKIND_EXPORT struct memkind_ops MEMKIND_PMEM_OPS = {
     .create = memkind_pmem_create,
     .destroy = memkind_pmem_destroy,
     .malloc = memkind_arena_malloc,
-    .calloc = memkind_arena_pmem_calloc,
+    .calloc = memkind_arena_calloc,
     .posix_memalign = memkind_arena_posix_memalign,
     .realloc = memkind_arena_realloc,
     .free = memkind_arena_free,
@@ -47,7 +46,9 @@ MEMKIND_EXPORT struct memkind_ops MEMKIND_PMEM_OPS = {
     .get_arena = memkind_thread_get_arena,
     .malloc_usable_size = memkind_default_malloc_usable_size,
     .finalize = memkind_pmem_destroy,
-    .update_memory_usage_policy = memkind_arena_update_memory_usage_policy
+    .update_memory_usage_policy = memkind_arena_update_memory_usage_policy,
+    .get_stat = memkind_arena_get_kind_stat,
+    .defrag_reallocate = memkind_arena_defrag_reallocate
 };
 
 void *pmem_extent_alloc(extent_hooks_t *extent_hooks,
@@ -66,8 +67,7 @@ void *pmem_extent_alloc(extent_hooks_t *extent_hooks,
         goto exit;
     }
 
-    struct memkind *kind;
-    kind = get_kind_by_arena(arena_ind);
+    struct memkind *kind = get_kind_by_arena(arena_ind);
     if (kind == NULL) {
         return NULL;
     }
@@ -100,9 +100,21 @@ bool pmem_extent_dalloc(extent_hooks_t *extent_hooks,
     // if madvise fail, it means that addr isn't mapped shared (doesn't come from pmem)
     // and it should be unmapped to avoid space exhaustion when calling large number of
     // operations like memkind_create_pmem and memkind_destroy_kind
-    // EOPNOTSUPP is returned in case of filesystem doesn't support FALLOC_FL_PUNCH_HOLE
     errno = 0;
-    if (madvise(addr, size, MADV_REMOVE) != 0 && errno != EOPNOTSUPP) {
+    int status = madvise(addr, size, MADV_REMOVE);
+    if (!status) {
+        struct memkind *kind = get_kind_by_arena(arena_ind);
+        struct memkind_pmem *priv = kind->priv;
+        if (pthread_mutex_lock(&priv->pmem_lock) != 0)
+            assert(0 && "failed to acquire mutex");
+        priv->current_size -= size;
+        if (pthread_mutex_unlock(&priv->pmem_lock) != 0)
+            assert(0 && "failed to release mutex");
+    } else {
+        if (errno == EOPNOTSUPP) {
+            log_fatal("Filesystem doesn't support FALLOC_FL_PUNCH_HOLE.");
+            abort();
+        }
         if (munmap(addr, size) == -1) {
             log_err("munmap failed!");
         }
@@ -195,9 +207,9 @@ MEMKIND_EXPORT int memkind_pmem_create(struct memkind *kind,
     struct memkind_pmem *priv;
     int err;
 
-    priv = (struct memkind_pmem *)jemk_malloc(sizeof(struct memkind_pmem));
+    priv = (struct memkind_pmem *)malloc(sizeof(struct memkind_pmem));
     if (!priv) {
-        log_err("jemk_malloc() failed.");
+        log_err("malloc() failed.");
         return MEMKIND_ERROR_MALLOC;
     }
 
@@ -222,7 +234,7 @@ MEMKIND_EXPORT int memkind_pmem_create(struct memkind *kind,
 exit:
     /* err is set, please don't overwrite it with result of pthread_mutex_destroy */
     pthread_mutex_destroy(&priv->pmem_lock);
-    jemk_free(priv);
+    free(priv);
     return err;
 }
 
@@ -235,7 +247,7 @@ MEMKIND_EXPORT int memkind_pmem_destroy(struct memkind *kind)
     pthread_mutex_destroy(&priv->pmem_lock);
 
     (void) close(priv->fd);
-    jemk_free(priv);
+    free(priv);
 
     return 0;
 }
@@ -249,22 +261,26 @@ MEMKIND_EXPORT void *memkind_pmem_mmap(struct memkind *kind, void *addr,
     if (pthread_mutex_lock(&priv->pmem_lock) != 0)
         assert(0 && "failed to acquire mutex");
 
-    if (priv->max_size != 0 && (size_t)priv->offset + size > priv->max_size) {
-        pthread_mutex_unlock(&priv->pmem_lock);
+    if (priv->max_size != 0 && priv->current_size + size > priv->max_size) {
+        if (pthread_mutex_unlock(&priv->pmem_lock) != 0)
+            assert(0 && "failed to release mutex");
         return MAP_FAILED;
     }
 
     if ((errno = posix_fallocate(priv->fd, priv->offset, (off_t)size)) != 0) {
-        pthread_mutex_unlock(&priv->pmem_lock);
+        if (pthread_mutex_unlock(&priv->pmem_lock) != 0)
+            assert(0 && "failed to release mutex");
         return MAP_FAILED;
     }
 
     if ((result = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, priv->fd,
                        priv->offset)) != MAP_FAILED) {
         priv->offset += size;
+        priv->current_size += size;
     }
 
-    pthread_mutex_unlock(&priv->pmem_lock);
+    if (pthread_mutex_unlock(&priv->pmem_lock) != 0)
+        assert(0 && "failed to release mutex");
 
     return result;
 }

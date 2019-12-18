@@ -35,7 +35,10 @@
 /examples/hello_memkind
 /examples/hello_memkind_debug
 /examples/memkind_allocated
+/examples/memkind_cpp_allocator
+/examples/memkind_get_stat
 /examples/pmem_alignment
+/examples/pmem_and_dax_kmem_kind
 /examples/pmem_and_default_kind
 /examples/pmem_config
 /examples/pmem_cpp_allocator
@@ -55,6 +58,7 @@
 /m4/
 /memkind-*.spec
 /memkind-*.tar.gz
+/memkind-auto-dax-kmem-nodes
 /memkind-hbw-nodes
 /missing
 /src/memkind_defines.h.in
@@ -63,6 +67,7 @@
 /test-driver
 /test-suite.log
 /test/*.o
+/test/*.pyc
 /test/*.so
 /test/.deps/
 /test/.dirstamp
@@ -77,7 +82,10 @@
 /test/autohbw_test_helper
 /test/check.sh.log
 /test/check.sh.trs
+/test/dax_kmem_test
 /test/decorator_test
+/test/environ_err_dax_kmem_malloc_positive_test
+/test/environ_err_dax_kmem_malloc_test
 /test/environ_err_hbw_malloc_test
 /test/environerr_hbw_malloc_test
 /test/environerr_test
@@ -91,9 +99,14 @@
 /test/locality_test
 /test/mallocerr_test
 /test/memkind_allocated
+/test/memkind_cpp_allocator
+/test/memkind_get_stat
+/test/memkind_stat_test
 /test/perf_tool
+/test/performance_test
 /test/performance/.deps/
 /test/pmem_alignment
+/test/pmem_and_dax_kmem_kind
 /test/pmem_and_default_kind
 /test/pmem_config
 /test/pmem_cpp_allocator
@@ -104,8 +117,10 @@
 /test/pmem_malloc_unlimited
 /test/pmem_multithreads
 /test/pmem_multithreads_onekind
+/test/pmem_test
 /test/pmem_usable_size
 /test/trace_mechanism_test_helper
+/test/defrag_reallocate
 /vs
 autom4te.cache/
 memkind.pc

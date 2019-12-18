@@ -53,6 +53,13 @@ BuildRequires: libnuma-devel
 BuildRequires: numactl-devel
 %endif
 
+%define daxctl_min_version 66
+%if %{defined suse_version}
+BuildRequires: libdaxctl-devel >= %{daxctl_min_version}
+%else
+BuildRequires: daxctl-devel >= %{daxctl_min_version}
+%endif
+
 Prefix: %{_prefix}
 Prefix: %{_unitdir}
 %if %{undefined suse_version}
@@ -106,7 +113,7 @@ Install header files and development aids to link memkind library into
 applications.
 
 %package tests
-Summary: Extention to libnuma for kinds of memory - validation
+Summary: Extension to libnuma for kinds of memory - validation
 Group: Validation/Libraries
 Requires: %{name} = %{version}-%{release}
 
@@ -158,22 +165,21 @@ rm -f %{buildroot}/%{_libdir}/libautohbw.{l,}a
 %dir %{_docdir}/%{namespace}
 %{_libdir}/lib%{namespace}.so.*
 %{_libdir}/libautohbw.so.*
+%{_bindir}/%{namespace}-auto-dax-kmem-nodes
 %{_bindir}/%{namespace}-hbw-nodes
-
-%define internal_include memkind/internal
 
 %files devel
 %defattr(-,root,root,-)
 %{_includedir}
 %{_includedir}/hbwmalloc.h
 %{_includedir}/hbw_allocator.h
+%{_includedir}/memkind_allocator.h
 %{_includedir}/pmem_allocator.h
 %{_libdir}/lib%{namespace}.so
 %{_libdir}/libautohbw.so
 %{_libdir}/pkgconfig/memkind.pc
 %{_includedir}/%{namespace}.h
-%{_includedir}/%{internal_include}
-%{_includedir}/%{internal_include}/%{namespace}*.h
+%{_mandir}/man1/memkind-auto-dax-kmem-nodes.1.*
 %{_mandir}/man1/memkind-hbw-nodes.1.*
 %{_mandir}/man3/hbwmalloc.3.*
 %{_mandir}/man3/hbwallocator.3.*
@@ -181,12 +187,13 @@ rm -f %{buildroot}/%{_libdir}/libautohbw.{l,}a
 %{_mandir}/man3/%{namespace}*.3.*
 %{_mandir}/man7/autohbw.7.*
 
-%exclude %{_includedir}/%{internal_include}/%{namespace}_log.h
-
 %files tests
 %defattr(-,root,root,-)
 $(memkind_test_dir)/all_tests
+${memkind_test_dir}/environ_err_dax_kmem_malloc_positive_test
+${memkind_test_dir}/environ_err_dax_kmem_malloc_test
 $(memkind_test_dir)/environ_err_hbw_malloc_test
+${memkind_test_dir}/dax_kmem_test
 $(memkind_test_dir)/decorator_test
 $(memkind_test_dir)/locality_test
 $(memkind_test_dir)/freeing_memory_segfault_test
@@ -196,12 +203,16 @@ $(memkind_test_dir)/hello_hbw
 $(memkind_test_dir)/hello_memkind
 $(memkind_test_dir)/hello_memkind_debug
 $(memkind_test_dir)/memkind_allocated
+$(memkind_test_dir)/memkind_cpp_allocator
+$(memkind_test_dir)/memkind_get_stat
+$(memkind_test_dir)/memkind_stat_test
 $(memkind_test_dir)/autohbw_candidates
 ${memkind_test_dir}/pmem_kinds
 ${memkind_test_dir}/pmem_malloc
 ${memkind_test_dir}/pmem_malloc_unlimited
 ${memkind_test_dir}/pmem_usable_size
 ${memkind_test_dir}/pmem_alignment
+${memkind_test_dir}/pmem_and_dax_kmem_kind
 ${memkind_test_dir}/pmem_and_default_kind
 ${memkind_test_dir}/pmem_config
 $(memkind_test_dir)/pmem_detect_kind
@@ -209,6 +220,7 @@ ${memkind_test_dir}/pmem_multithreads
 ${memkind_test_dir}/pmem_multithreads_onekind
 $(memkind_test_dir)/pmem_free_with_unknown_kind
 ${memkind_test_dir}/pmem_cpp_allocator
+${memkind_test_dir}/pmem_test
 ${memkind_test_dir}/allocator_perf_tool_tests
 ${memkind_test_dir}/perf_tool
 ${memkind_test_dir}/autohbw_test_helper
@@ -219,8 +231,11 @@ $(memkind_test_dir)/memkind-slts.ts
 $(memkind_test_dir)/memkind-perf.ts
 $(memkind_test_dir)/memkind-perf-ext.ts
 $(memkind_test_dir)/memkind-pytests.ts
+$(memkind_test_dir)/performance_test
 $(memkind_test_dir)/test.sh
+$(memkind_test_dir)/test_dax_kmem.sh
 $(memkind_test_dir)/hbw_detection_test.py
+$(memkind_test_dir)/dax_kmem_env_var_test.py
 $(memkind_test_dir)/autohbw_test.py
 $(memkind_test_dir)/trace_mechanism_test.py
 $(memkind_test_dir)/python_framework
@@ -234,6 +249,7 @@ $(memkind_test_dir)/alloc_benchmark_glibc
 $(memkind_test_dir)/alloc_benchmark_tbb
 $(memkind_test_dir)/alloc_benchmark_pmem
 $(memkind_test_dir)/fragmentation_benchmark_pmem
+$(memkind_test_dir)/defrag_reallocate
 
 %exclude $(memkind_test_dir)/*.pyo
 %exclude $(memkind_test_dir)/*.pyc

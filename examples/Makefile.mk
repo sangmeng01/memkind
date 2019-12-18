@@ -27,7 +27,9 @@ noinst_PROGRAMS += examples/autohbw_candidates \
                    examples/hello_hbw \
                    examples/hello_memkind \
                    examples/hello_memkind_debug \
+                   examples/memkind_get_stat \
                    examples/pmem_alignment \
+                   examples/pmem_and_dax_kmem_kind \
                    examples/pmem_and_default_kind \
                    examples/pmem_config \
                    examples/pmem_detect_kind \
@@ -41,6 +43,7 @@ noinst_PROGRAMS += examples/autohbw_candidates \
                    # end
 if HAVE_CXX11
 noinst_PROGRAMS += examples/memkind_allocated
+noinst_PROGRAMS += examples/memkind_cpp_allocator
 noinst_PROGRAMS += examples/pmem_cpp_allocator
 endif
 
@@ -49,7 +52,9 @@ examples_filter_memkind_LDADD = libmemkind.la
 examples_hello_hbw_LDADD = libmemkind.la
 examples_hello_memkind_LDADD = libmemkind.la
 examples_hello_memkind_debug_LDADD = libmemkind.la
+examples_memkind_get_stat_LDADD = libmemkind.la
 examples_pmem_alignment_LDADD = libmemkind.la
+examples_pmem_and_dax_kmem_kind_LDADD = libmemkind.la
 examples_pmem_and_default_kind_LDADD = libmemkind.la
 examples_pmem_config_LDADD = libmemkind.la
 examples_pmem_detect_kind_LDADD = libmemkind.la
@@ -63,6 +68,7 @@ examples_pmem_usable_size_LDADD = libmemkind.la
 
 if HAVE_CXX11
 examples_memkind_allocated_LDADD = libmemkind.la
+examples_memkind_cpp_allocator_LDADD  = libmemkind.la
 examples_pmem_cpp_allocator_LDADD = libmemkind.la
 endif
 
@@ -72,6 +78,7 @@ examples_hello_hbw_SOURCES = examples/hello_hbw_example.c
 examples_hello_memkind_SOURCES = examples/hello_memkind_example.c
 examples_hello_memkind_debug_SOURCES = examples/hello_memkind_example.c examples/memkind_decorator_debug.c
 examples_pmem_alignment_SOURCES = examples/pmem_alignment.c
+examples_pmem_and_dax_kmem_kind_SOURCES = examples/pmem_and_dax_kmem_kind.c
 examples_pmem_and_default_kind_SOURCES = examples/pmem_and_default_kind.c
 examples_pmem_config_SOURCES = examples/pmem_config.c
 examples_pmem_detect_kind_SOURCES = examples/pmem_detect_kind.c
@@ -84,6 +91,7 @@ examples_pmem_multithreads_onekind_SOURCES = examples/pmem_multithreads_onekind.
 examples_pmem_usable_size_SOURCES = examples/pmem_usable_size.c
 if HAVE_CXX11
 examples_memkind_allocated_SOURCES = examples/memkind_allocated_example.cpp examples/memkind_allocated.hpp
+examples_memkind_cpp_allocator_SOURCES = examples/memkind_cpp_allocator.cpp
 examples_pmem_cpp_allocator_SOURCES = examples/pmem_cpp_allocator.cpp
 endif
 

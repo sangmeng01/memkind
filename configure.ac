@@ -25,10 +25,10 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.64])
+AC_PREREQ([2.63])
 AC_INIT([memkind],m4_esyscmd([tr -d '\n' < VERSION]))
 
-AC_CONFIG_MACRO_DIRS([m4])
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([memkind.spec.mk])
 
@@ -36,7 +36,7 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign 1.11 silent-rules subdir-objects paralle
 AM_SILENT_RULES([yes])
 
 # Checks for programs and libraries.
-AM_PROG_AR
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_CXX
 AC_PROG_CC
 AC_OPENMP
@@ -150,6 +150,21 @@ fi
 
 AC_SUBST([enable_secure])
 
+#============================tcache_max_size_class======================
+
+tcache_max_size_class=12;
+AC_DEFINE_UNQUOTED([JEMALLOC_TCACHE_CLASS], $tcache_max_size_class,
+  [Maximum size class (log base 2) to cache in jemalloc tcache])
+
+AC_SUBST(tcache_max_size_class)
+
+#============================auto_arenas================================
+auto_arenas=256;
+AC_DEFINE_UNQUOTED([ARENA_LIMIT_DEFAULT_KIND], $auto_arenas,
+  [Maximum number of automatic managed arenas by jemalloc (used by MEMKIND_DEFAULT)])
+
+AC_SUBST(auto_arenas)
+
 #============================arena_limit=======================================
 arena_limit=256;
 AC_ARG_VAR(ARENA_LIMIT,
@@ -160,6 +175,38 @@ if test "$ARENA_LIMIT" != "" ; then
 fi
 
 AC_DEFINE_UNQUOTED([ARENA_LIMIT_PER_KIND], $arena_limit, [Upper bound for number of arenas per kind])
+
+#============================memkind_prefix=======================================
+memkind_prefix=jemk_;
+AC_ARG_VAR(MEMKIND_PREFIX,
+  [Prefix used for all jemalloc public API under memkind, default value jemk_]
+)
+if test "$MEMKIND_PREFIX" != "" ; then
+  memkind_prefix=$MEMKIND_PREFIX;
+fi
+
+AC_SUBST(memkind_prefix)
+
+#===============================daxctl=========================================
+AC_ARG_ENABLE([daxctl],
+  [AS_HELP_STRING([--enable-daxctl], [Build library with daxctl support])],
+[if test "x$enable_daxctl" = "xno" ; then
+  enable_daxctl="0"
+else
+  enable_daxctl="1"
+fi
+],
+[enable_daxctl="1"]
+)
+if test "x$enable_daxctl" = "x1" ; then
+    AC_CHECK_LIB(daxctl, daxctl_dev_get_memory, [daxctl_kmem=yes], [daxctl_kmem=no])
+fi
+if test $daxctl_kmem = "yes" ; then
+    AC_DEFINE([MEMKIND_DAXCTL_KMEM], [1], [Automatic recognition of PMEM as system memory in MEMKIND_DAX_KMEM])
+    AC_SUBST(DAXCTL_LIBS, [-ldaxctl])
+    LDFLAGS="$LDFLAGS -ldaxctl"
+fi
+AC_SUBST([enable_daxctl])
 
 #============================cxx11=============================================
 
@@ -172,4 +219,16 @@ LT_INIT
 AC_CONFIG_FILES([Makefile memkind.pc])
 
 AC_OUTPUT
-
+AC_MSG_RESULT([=================================================================================])
+AC_MSG_RESULT([
+               Memkind version $VERSION])
+if test $daxctl_kmem = "yes" ; then
+AC_MSG_RESULT([
+               Automatic recognition of PMEM NUMA in MEMKIND_DAX_KMEM is enabled])
+else
+AC_MSG_RESULT([
+               Automatic recognition of PMEM NUMA in MEMKIND_DAX_KMEM is disabled
+               To enable this feature please install libdaxctl-devel v66 or later
+               and run configure again])
+fi
+AC_MSG_RESULT([=================================================================================])

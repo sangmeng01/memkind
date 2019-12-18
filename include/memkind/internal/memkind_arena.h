@@ -27,10 +27,6 @@
 extern "C" {
 #endif
 
-#ifndef MEMKIND_INTERNAL_API
-#warning "DO NOT INCLUDE THIS FILE! IT IS INTERNAL MEMKIND API AND SOON WILL BE REMOVED FROM BIN & DEVEL PACKAGES"
-#endif
-
 #include <memkind.h>
 #include <jemalloc/jemalloc.h>
 #include <memkind/internal/memkind_private.h>
@@ -51,7 +47,6 @@ int memkind_arena_create_map(struct memkind *kind, extent_hooks_t *hooks);
 int memkind_arena_destroy(struct memkind *kind);
 void *memkind_arena_malloc(struct memkind *kind, size_t size);
 void *memkind_arena_calloc(struct memkind *kind, size_t num, size_t size);
-void *memkind_arena_pmem_calloc(struct memkind *kind, size_t num, size_t size);
 int memkind_arena_posix_memalign(struct memkind *kind, void **memptr,
                                  size_t alignment, size_t size);
 void *memkind_arena_realloc(struct memkind *kind, void *ptr, size_t size);
@@ -67,6 +62,16 @@ void memkind_arena_free_with_kind_detect(void *ptr);
 size_t memkind_arena_malloc_usable_size(void *ptr);
 int memkind_arena_update_memory_usage_policy(struct memkind *kind,
                                              memkind_mem_usage_policy policy);
+int memkind_arena_enable_background_threads(size_t threads_limit);
+int memkind_arena_update_cached_stats(void);
+int memkind_arena_get_kind_stat(struct memkind *kind,
+                                memkind_stat_type stat_type,
+                                size_t *stat);
+int memkind_arena_get_stat_with_check_init(struct memkind *kind,
+                                           memkind_stat_type stat, bool check_init, size_t *value);
+int memkind_arena_get_global_stat(memkind_stat_type stat_type, size_t *stat);
+void *memkind_arena_defrag_reallocate(struct memkind *kind, void *ptr);
+void *memkind_arena_defrag_reallocate_with_kind_detect(void *ptr);
 #ifdef __cplusplus
 }
 #endif

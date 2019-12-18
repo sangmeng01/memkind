@@ -149,6 +149,37 @@ void *tbb_pool_realloc_with_kind_detect(void *ptr, size_t size)
     return tbb_pool_common_realloc(pool_identify(ptr), ptr, size);
 }
 
+int tbb_get_global_stat(memkind_stat_type stat, size_t *value)
+{
+    log_err("Get allocator statistic is not supported by TBB");
+    return MEMKIND_ERROR_OPERATION_FAILED;
+}
+
+static int tbb_get_kind_stat(memkind_t kind, memkind_stat_type stat,
+                             size_t *value)
+{
+    log_err("Get kind statistic is not supported by TBB");
+    return MEMKIND_ERROR_OPERATION_FAILED;
+}
+
+int tbb_update_cached_stats(void)
+{
+    log_err("Update cached statistics is not supported by TBB");
+    return MEMKIND_ERROR_OPERATION_FAILED;
+}
+
+void *tbb_pool_defrag_reallocate_with_kind_detect(void *ptr)
+{
+    log_err("Defrag reallocate method is not supported by TBB");
+    return NULL;
+}
+
+static void *tbb_defrag_reallocate(struct memkind *kind, void *ptr)
+{
+    log_err("Defrag reallocate method is not supported by TBB");
+    return NULL;
+}
+
 struct memkind *tbb_detect_kind(void *ptr)
 {
     if (!ptr) {
@@ -272,4 +303,6 @@ void tbb_initialize(struct memkind *kind)
     kind->ops->finalize = tbb_destroy;
     kind->ops->malloc_usable_size = tbb_pool_malloc_usable_size;
     kind->ops->update_memory_usage_policy = tbb_update_memory_usage_policy;
+    kind->ops->get_stat = tbb_get_kind_stat;
+    kind->ops->defrag_reallocate = tbb_defrag_reallocate;
 }

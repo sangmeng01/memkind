@@ -27,10 +27,6 @@
 extern "C" {
 #endif
 
-#ifndef MEMKIND_INTERNAL_API
-#warning "DO NOT INCLUDE THIS FILE! IT IS INTERNAL MEMKIND API AND SOON WILL BE REMOVED FROM BIN & DEVEL PACKAGES"
-#endif
-
 #include <memkind.h>
 #include <memkind/internal/memkind_private.h>
 
@@ -63,7 +59,6 @@ int memkind_nohugepage_madvise(struct memkind *kind, void *addr, size_t size);
 int memkind_posix_check_alignment(struct memkind *kind, size_t alignment);
 void memkind_default_init_once(void);
 size_t memkind_default_malloc_usable_size(struct memkind *kind, void *ptr);
-int memkind_default_get_defrag_hint(void *ptr, int *bin_util, int *run_util);
 static inline bool size_out_of_bounds(size_t size)
 {
     return !size;

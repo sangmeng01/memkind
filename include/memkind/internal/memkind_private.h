@@ -27,10 +27,6 @@
 extern "C" {
 #endif
 
-#ifndef MEMKIND_INTERNAL_API
-#warning "DO NOT INCLUDE THIS FILE! IT IS INTERNAL MEMKIND API AND SOON WILL BE REMOVED FROM BIN & DEVEL PACKAGES"
-#endif
-
 #include "memkind.h"
 
 #include <stdbool.h>
@@ -46,10 +42,6 @@ extern "C" {
 
 #ifndef MEMKIND_EXPORT
 #   define MEMKIND_EXPORT __attribute__((visibility("default")))
-#endif
-
-#ifndef JE_PREFIX
-#error "Can't find JE_PREFIX define. Define one or use build.sh script."
 #endif
 
 // This ladder call is required due to meanders of C's preprocessor logic.
@@ -71,7 +63,6 @@ extern "C" {
 #define jemk_free                   JE_SYMBOL(free)
 #define jemk_dallocx                JE_SYMBOL(dallocx)
 #define jemk_malloc_usable_size     JE_SYMBOL(malloc_usable_size)
-#define jemk_get_defrag_hint        JE_SYMBOL(get_defrag_hint)
 
 enum memkind_const_private {
     MEMKIND_NAME_LENGTH_PRIV = 64
@@ -95,12 +86,13 @@ struct memkind_ops {
                                unsigned long maxnode);
     int (* get_arena)(struct memkind *kind, unsigned int *arena, size_t size);
     int (* check_available)(struct memkind *kind);
-    int (* check_addr)(struct memkind *kind, void *addr);
     void (* init_once)(void);
     int (* finalize)(struct memkind *kind);
     size_t (* malloc_usable_size)(struct memkind *kind, void *ptr);
     int (* update_memory_usage_policy)(struct memkind *kind,
                                        memkind_mem_usage_policy policy);
+    int (* get_stat)(memkind_t kind, memkind_stat_type stat, size_t *value);
+    void *(* defrag_reallocate)(struct memkind *kind, void *ptr);
 };
 
 struct memkind {
