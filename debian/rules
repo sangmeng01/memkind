@@ -15,13 +15,9 @@ override_dh_autoreconf:
 	dh_autoreconf
 
 override_dh_auto_configure:
-	./build_jemalloc.sh
 	dh_auto_configure -- --prefix=/usr --disable-secure \
 	   --includedir=/usr/include --sbindir=/usr/sbin --enable-cxx11 \
 	   --mandir=/usr/share/man --docdir=/usr/share/doc/memkind
-
-override_dh_auto_build:
-	dh_auto_build -- checkprogs
 
 override_dh_auto_install:
 	dh_auto_install
