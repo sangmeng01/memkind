@@ -1,3 +1,9 @@
+memkind (1.10.0-2) unstable; urgency=medium
+
+  * Enable mips64el.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Sun, 22 Dec 2019 19:52:52 +0100
+
 memkind (1.10.0-1) unstable; urgency=medium
 
   * New upstream release.
