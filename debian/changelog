@@ -1,3 +1,10 @@
+memkind (1.10.0-3) unstable; urgency=medium
+
+  * Skip tests if no NUMA -- some s390x and mips64el official kernels are
+    built without.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 23 Dec 2019 13:33:54 +0100
+
 memkind (1.10.0-2) unstable; urgency=medium
 
   * Enable mips64el.
