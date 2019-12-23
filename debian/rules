@@ -7,11 +7,8 @@
 export JE_PREFIX=jemk_
 
 override_dh_auto_test:
-ifeq "$(DEB_HOST_ARCH)" "s390x"
-	if dpkg-vendor --derives-from Ubuntu; then $(MAKE) unit_tests; fi
-else
-	+$(MAKE) unit_tests
-endif
+	@if numactl -H >/dev/null; then $(MAKE) unit_tests; else \
+	    echo ===== No NUMA, not running tests! =====; fi
 
 override_dh_autoreconf:
 	dpkg-parsechangelog -SVersion|cut -d- -f1 >VERSION
