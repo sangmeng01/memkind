@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2019 Intel Corporation.
+ * Copyright (C) 2014 - 2020 Intel Corporation.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -126,6 +126,11 @@ static int arena_init_status;
 
 static pthread_key_t tcache_key;
 static bool memkind_hog_memory;
+
+bool memkind_get_hog_memory(void)
+{
+    return memkind_hog_memory;
+}
 
 static void arena_config_init()
 {
@@ -272,7 +277,7 @@ bool arena_extent_purge(extent_hooks_t *extent_hooks,
                         size_t length,
                         unsigned arena_ind)
 {
-    if (memkind_hog_memory) {
+    if (memkind_get_hog_memory()) {
         return true;
     }
 
@@ -931,7 +936,7 @@ void *memkind_arena_defrag_reallocate(struct memkind *kind, void *ptr)
         void *ptr_new = memkind_arena_malloc_no_tcache(kind, size);
         if (MEMKIND_UNLIKELY(!ptr_new)) return NULL;
         memcpy(ptr_new, ptr, size);
-        memkind_free(kind, ptr);
+        jemk_dallocx(ptr, MALLOCX_TCACHE_NONE);
         return ptr_new;
     }
     return NULL;

@@ -2,7 +2,7 @@
 
 This is utils/docker/README.
 
-Scripts in this directory let run a Docker container with Ubuntu 18.04 and Fedora 30 environment
+Scripts in this directory let run a Docker container with Ubuntu 18.04 and Fedora 31 environment
 to build, test and optionally measure test coverage of any pull request to memkind project, inside it.
 
 # Environment variables
@@ -24,6 +24,9 @@ see https://github.com/pmem/ndctl/tags.
 * **TBB_LIBRARY_VERSION** - Intel Threading Building Blocks library version.
 For testing Threading Building Blocks, TBB library version tag must be passed as parameter,
 see https://github.com/01org/tbb/tags.
+
+* **HOG_MEMORY** - Controls behavior of memkind with regards to returning memory to underlying OS. Setting **HOG_MEMORY** to 1 causes
+memkind to not release memory to OS in anticipation of memory reuse soon. For PMEM memory will be released only after calling memkind_destroy_kind()
 
 # Files
 *'docker_run_build.sh'*  is used to build of memkind.

@@ -122,6 +122,8 @@ test/bat_tests.cpp
 test/check.cpp
 test/check.h
 test/common.h
+test/dax_kmem_nodes.cpp
+test/dax_kmem_nodes.h
 test/dax_kmem_env_var_test.py
 test/decorator_test.cpp
 test/decorator_test.h
@@ -180,7 +182,7 @@ test/trace_mechanism_test.py
 test/trace_mechanism_test_helper.c
 test/trial_generator.cpp
 test/trial_generator.h
-utils/docker/Dockerfile.fedora-30
+utils/docker/Dockerfile.fedora-31
 utils/docker/Dockerfile.ubuntu-18.04
 utils/docker/docker_install_ndctl.sh
 utils/docker/docker_install_tbb.sh

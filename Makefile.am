@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014 - 2019 Intel Corporation.
+#  Copyright (C) 2014 - 2020 Intel Corporation.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -24,6 +24,7 @@
 
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/jemalloc/include
+MAN2HTML = groff -mandoc -Thtml
 
 lib_LTLIBRARIES = libmemkind.la
 
@@ -404,7 +405,7 @@ EXTRA_DIST = CONTRIBUTING \
              memkind.spec.mk \
              test/test.sh \
              test/test_dax_kmem.sh \
-             utils/docker/Dockerfile.fedora-30 \
+             utils/docker/Dockerfile.fedora-31 \
              utils/docker/Dockerfile.ubuntu-18.04 \
              utils/docker/README.md \
              utils/docker/docker_install_ndctl.sh \
@@ -461,11 +462,17 @@ AM_CXXFLAGS = $(req_flags)
 
 clean-local: clean-jemalloc_deps
 
+html-local:
+	$(MAN2HTML) man/hbwmalloc.3 > man/hbwmalloc.html
+	$(MAN2HTML) man/memkind.3 > man/memkind.html
+	$(MAN2HTML) man/memkindallocator.3 > man/memkindallocator.html
+	$(MAN2HTML) man/pmemallocator.3 > man/pmemallocator.html
+
 clean-jemalloc_deps:
 	[ -e jemalloc/configure ] && (cd jemalloc && $(MAKE) clean) || exit 0
 	[ -e jemalloc/configure ] && (cd jemalloc && rm configure) || exit 0
 
-.PHONY: jemalloc_deps checkprogs clean-jemalloc_deps
+.PHONY: jemalloc_deps checkprogs clean-jemalloc_deps html-local
 .NOTPARALLEL: static_lib
 
 # build check programs without running tests
@@ -493,7 +500,7 @@ static_lib: libmemkind.la
 	cp libmemkind.a .libs/
 	rm libmemkind.a
 
-JEMALLOC_CONFIG = --enable-autogen --without-export --with-version=5.2.1-0-gea6b3e973b477b8061e0076bb257dbd7f3faa756 \
+JEMALLOC_CONFIG = --enable-autogen @min_lg_align_opt@ --without-export --with-version=5.2.1-0-gea6b3e973b477b8061e0076bb257dbd7f3faa756 \
 			--disable-fill --disable-initial-exec-tls --with-jemalloc-prefix=@memkind_prefix@ \
 			--with-malloc-conf="narenas:@auto_arenas@,lg_tcache_max:@tcache_max_size_class@" \
 			#end

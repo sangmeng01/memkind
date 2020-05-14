@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2019 Intel Corporation.
+ * Copyright (C) 2014 - 2020 Intel Corporation.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,7 +23,7 @@
  */
 #define MEMKIND_VERSION_MAJOR 1
 #define MEMKIND_VERSION_MINOR 10
-#define MEMKIND_VERSION_PATCH 0
+#define MEMKIND_VERSION_PATCH 1
 
 #include <memkind.h>
 #include <memkind/internal/memkind_default.h>
@@ -271,8 +271,8 @@ static int validate_flags_bits(memkind_bits_t flags)
 
 static int validate_policy(memkind_policy_t policy)
 {
-    if((policy >= 0) && (policy < MEMKIND_POLICY_MAX_VALUE)) return 0;
-    return -1;
+    if (policy >= MEMKIND_POLICY_MAX_VALUE) return -1;
+    return 0;
 }
 
 struct create_args {
@@ -740,48 +740,6 @@ MEMKIND_EXPORT void memkind_free(struct memkind *kind, void *ptr)
 #endif
 }
 
-static int memkind_tmpfile(const char *dir, int *fd)
-{
-    static char template[] = "/memkind.XXXXXX";
-    int err = MEMKIND_SUCCESS;
-    int oerrno;
-    int dir_len = strlen(dir);
-
-    if (dir_len > PATH_MAX) {
-        log_err("Could not create temporary file: too long path.");
-        return MEMKIND_ERROR_INVALID;
-    }
-
-    char fullname[dir_len + sizeof (template)];
-    (void) strcpy(fullname, dir);
-    (void) strcat(fullname, template);
-
-    sigset_t set, oldset;
-    sigfillset(&set);
-    (void) sigprocmask(SIG_BLOCK, &set, &oldset);
-
-    if ((*fd = mkstemp(fullname)) < 0) {
-        log_err("Could not create temporary file: errno=%d.", errno);
-        err = MEMKIND_ERROR_INVALID;
-        goto exit;
-    }
-
-    (void) unlink(fullname);
-    (void) sigprocmask(SIG_SETMASK, &oldset, NULL);
-
-    return err;
-
-exit:
-    oerrno = errno;
-    (void) sigprocmask(SIG_SETMASK, &oldset, NULL);
-    if (*fd != -1) {
-        (void) close(*fd);
-    }
-    *fd = -1;
-    errno = oerrno;
-    return err;
-}
-
 MEMKIND_EXPORT struct memkind_config *memkind_config_new(void)
 {
     struct memkind_config *cfg = (struct memkind_config *)malloc(sizeof(
@@ -830,7 +788,7 @@ MEMKIND_EXPORT int memkind_create_pmem(const char *dir, size_t max_size,
     int fd = -1;
     char name[16];
 
-    int err = memkind_tmpfile(dir, &fd);
+    int err = memkind_pmem_create_tmpfile(dir, &fd);
     if (err) {
         goto exit;
     }
@@ -848,6 +806,11 @@ MEMKIND_EXPORT int memkind_create_pmem(const char *dir, size_t max_size,
     priv->offset = 0;
     priv->current_size = 0;
     priv->max_size = max_size;
+    priv->dir = malloc(strlen(dir)+1);
+    if (!priv->dir) {
+        goto exit;
+    }
+    memcpy(priv->dir, dir, strlen(dir));
 
     return err;
 
