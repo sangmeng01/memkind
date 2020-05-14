@@ -1,3 +1,11 @@
+memkind (1.10.1~rc1-1) experimental; urgency=medium
+
+  * A new upstream RC.
+  * Temporarily enable all 64-bit archs.
+  * Teach the watch file about -rc → ~rc
+
+ -- Adam Borowski <kilobyte@angband.pl>  Thu, 14 May 2020 22:56:02 +0200
+
 memkind (1.10.0-4) unstable; urgency=medium
 
   * Chery-pick fixes for gcc-10.  Closes: #957528.
