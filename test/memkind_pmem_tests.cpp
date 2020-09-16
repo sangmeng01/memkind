@@ -1,26 +1,5 @@
-/*
- * Copyright (C) 2015 - 2020 Intel Corporation.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * 1. Redistributions of source code must retain the above copyright notice(s),
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice(s),
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER(S) ``AS IS'' AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO
- * EVENT SHALL THE COPYRIGHT HOLDER(S) BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-2-Clause
+/* Copyright (C) 2015 - 2020 Intel Corporation. */
 
 #include <memkind/internal/memkind_pmem.h>
 #include <memkind/internal/memkind_private.h>
@@ -292,14 +271,14 @@ TEST_F(MemkindPmemTests, test_TC_MEMKIND_PmemFreeMemoryAfterDestroyLargeClass)
 {
     memkind_t pmem_kind_test;
     struct statfs st;
-    double blocksAvailable;
+    double blocksInitial, blocksBeforeDestroy, blocksAfterDestroy;
 
     int err = memkind_create_pmem(PMEM_DIR, PMEM_PART_SIZE, &pmem_kind_test);
     ASSERT_EQ(0, err);
     ASSERT_NE(nullptr, pmem_kind_test);
 
     ASSERT_EQ(0, statfs(PMEM_DIR, &st));
-    blocksAvailable = st.f_bfree;
+    blocksInitial = st.f_bfree;
 
     while(1) {
         if (memkind_malloc(pmem_kind_test, 16 * KB) == nullptr)
@@ -307,40 +286,44 @@ TEST_F(MemkindPmemTests, test_TC_MEMKIND_PmemFreeMemoryAfterDestroyLargeClass)
     }
 
     ASSERT_EQ(0, statfs(PMEM_DIR, &st));
-    ASSERT_GT(blocksAvailable, st.f_bfree);
+    blocksBeforeDestroy = st.f_bfree;
+    ASSERT_GT(blocksInitial, blocksBeforeDestroy);
 
     err = memkind_destroy_kind(pmem_kind_test);
     ASSERT_EQ(0, err);
 
     ASSERT_EQ(0, statfs(PMEM_DIR, &st));
-    ASSERT_NEAR(blocksAvailable, st.f_bfree, 1);
+    blocksAfterDestroy = st.f_bfree;
+    ASSERT_GT(blocksAfterDestroy, blocksBeforeDestroy);
 }
 
 TEST_F(MemkindPmemTests, test_TC_MEMKIND_PmemFreeMemoryAfterDestroySmallClass)
 {
     memkind_t pmem_kind_test;
     struct statfs st;
-    double blocksAvailable;
+    double blocksInitial, blocksBeforeDestroy, blocksAfterDestroy;
 
     int err = memkind_create_pmem(PMEM_DIR, PMEM_PART_SIZE, &pmem_kind_test);
     ASSERT_EQ(0, err);
     ASSERT_NE(nullptr, pmem_kind_test);
 
     ASSERT_EQ(0, statfs(PMEM_DIR, &st));
-    blocksAvailable = st.f_bfree;
+    blocksInitial = st.f_bfree;
 
     for(int i = 0; i < 100; ++i) {
         ASSERT_NE(memkind_malloc(pmem_kind_test, 32), nullptr);
     }
 
     ASSERT_EQ(0, statfs(PMEM_DIR, &st));
-    ASSERT_GT(blocksAvailable, st.f_bfree);
+    blocksBeforeDestroy = st.f_bfree;
+    ASSERT_GT(blocksInitial, blocksBeforeDestroy);
 
     err = memkind_destroy_kind(pmem_kind_test);
     ASSERT_EQ(0, err);
 
     ASSERT_EQ(0, statfs(PMEM_DIR, &st));
-    ASSERT_NEAR(blocksAvailable, st.f_bfree, 1);
+    blocksAfterDestroy = st.f_bfree;
+    ASSERT_GT(blocksAfterDestroy, blocksBeforeDestroy);
 }
 
 TEST_F(MemkindPmemTests, test_TC_MEMKIND_PmemRealloc)

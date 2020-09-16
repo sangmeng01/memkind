@@ -1,26 +1,5 @@
-/*
- * Copyright (C) 2014 - 2020 Intel Corporation.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * 1. Redistributions of source code must retain the above copyright notice(s),
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice(s),
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER(S) ``AS IS'' AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO
- * EVENT SHALL THE COPYRIGHT HOLDER(S) BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-2-Clause
+/* Copyright (C) 2014 - 2020 Intel Corporation. */
 
 #include <memkind.h>
 #include <memkind/internal/memkind_default.h>
@@ -453,31 +432,16 @@ static void tcache_finalize(void *args)
     }
 }
 
-static inline int memkind_lookup_arena(void *ptr, unsigned int *arena)
-{
-    size_t sz = sizeof(unsigned);
-    unsigned temp_arena;
-    int err = jemk_mallctl("arenas.lookup", &temp_arena, &sz, &ptr, sizeof(ptr));
-
-    if (err) {
-        log_err("Could not found arena, err=%d", err);
-        return 1;
-    }
-
-    *arena = temp_arena;
-    return 0;
-}
-
 MEMKIND_EXPORT struct memkind *memkind_arena_detect_kind(void *ptr)
 {
     if (!ptr) {
         return NULL;
     }
     struct memkind *kind = NULL;
-    unsigned arena;
-    int err = memkind_lookup_arena(ptr, &arena);
-    if (MEMKIND_LIKELY(!err)) {
-        kind = get_kind_by_arena(arena);
+
+    int result = jemk_arenalookupx(ptr);
+    if (result >= 0) {
+        kind = get_kind_by_arena((unsigned)result);
     }
 
     /* if no kind was associated with arena it means that allocation doesn't come from
@@ -893,17 +857,6 @@ int memkind_arena_enable_background_threads(size_t threads_limit)
     return err;
 }
 
-#define DEST_SLAB_END(begin, size) ((uintptr_t)begin+ (uintptr_t)size)
-
-struct mem_util_stats {
-    void *target_slab;      // address of the slab of a potential realloaction would go to ( NULL in case of large/huge allocation)
-    size_t nfree;           // number of free regions in the slab
-    size_t nregs;           // number of regions in the slab
-    size_t slab_size;       // size of the slab in bytes
-    size_t bin_nfree;       // total number of free regions in the bin the slab belongs to
-    size_t bin_nregs;       // total number of regions in the bin the slab belongs to
-};
-
 void *memkind_arena_defrag_reallocate_with_kind_detect (void *ptr)
 {
     return memkind_arena_defrag_reallocate(memkind_detect_kind(ptr), ptr);
@@ -915,23 +868,7 @@ void *memkind_arena_defrag_reallocate(struct memkind *kind, void *ptr)
         return NULL;
     }
 
-    size_t out_sz = sizeof(struct mem_util_stats);
-    struct mem_util_stats out;
-    int err = jemk_mallctl("experimental.utilization.query", &out, &out_sz, &ptr,
-                           sizeof(ptr));
-    if (err) {
-        log_err("Error on get utilization query");
-        return NULL;
-    }
-
-    // Check if input pointer resides outside of potential reallocation slab
-    // Check if occupied regions inside the slab are below average occupied regions inside bin
-    // Check if there are some free regions in the destination slab
-    if (out.target_slab &&
-        ((ptr < out.target_slab) ||
-         (uintptr_t)ptr > DEST_SLAB_END(out.target_slab, out.slab_size)) &&
-        out.nfree * out.bin_nregs >= out.nregs * out.bin_nfree &&
-        out.nfree != 0) {
+    if (!jemk_check_reallocatex(ptr)) {
         size_t size = memkind_malloc_usable_size(kind, ptr);
         void *ptr_new = memkind_arena_malloc_no_tcache(kind, size);
         if (MEMKIND_UNLIKELY(!ptr_new)) return NULL;
