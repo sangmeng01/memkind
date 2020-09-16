@@ -1,10 +1,10 @@
 libmemkind.so.0 libmemkind0 #MINVER#
- MEMKIND_DAX_KMEM@Base 1.10~
- MEMKIND_DAX_KMEM_ALL@Base 1.10~
- MEMKIND_DAX_KMEM_ALL_OPS@Base 1.10~
- MEMKIND_DAX_KMEM_OPS@Base 1.10~
- MEMKIND_DAX_KMEM_PREFERRED@Base 1.10~
- MEMKIND_DAX_KMEM_PREFERRED_OPS@Base 1.10~
+ MEMKIND_DAX_KMEM@Base 1.10
+ MEMKIND_DAX_KMEM_ALL@Base 1.10
+ MEMKIND_DAX_KMEM_ALL_OPS@Base 1.10
+ MEMKIND_DAX_KMEM_OPS@Base 1.10
+ MEMKIND_DAX_KMEM_PREFERRED@Base 1.10
+ MEMKIND_DAX_KMEM_PREFERRED_OPS@Base 1.10
  MEMKIND_DEFAULT@Base 1.7.0
  MEMKIND_DEFAULT_OPS@Base 1.7.0
  MEMKIND_GBTLB@Base 1.7.0
@@ -39,7 +39,7 @@ libmemkind.so.0 libmemkind0 #MINVER#
  hbw_free@Base 1.7.0
  hbw_get_policy@Base 1.7.0
  hbw_malloc@Base 1.7.0
- hbw_malloc_usable_size@Base 1.10~
+ hbw_malloc_usable_size@Base 1.10
  hbw_posix_memalign@Base 1.7.0
  hbw_posix_memalign_psize@Base 1.7.0
  hbw_realloc@Base 1.7.0
@@ -69,7 +69,7 @@ libmemkind.so.0 libmemkind0 #MINVER#
  memkind_create_kind@Base 1.7.0
  memkind_create_pmem@Base 1.7.0
  memkind_create_pmem_with_config@Base 1.9.0
- memkind_dax_kmem_all_get_mbind_nodemask@Base 1.10~
+ memkind_dax_kmem_all_get_mbind_nodemask@Base 1.10
  memkind_default_calloc@Base 1.7.0
  memkind_default_create@Base 1.7.0
  memkind_default_destroy@Base 1.7.0
@@ -84,13 +84,13 @@ libmemkind.so.0 libmemkind0 #MINVER#
  memkind_default_mmap@Base 1.7.0
  memkind_default_posix_memalign@Base 1.7.0
  memkind_default_realloc@Base 1.7.0
- memkind_defrag_reallocate@Base 1.10~
+ memkind_defrag_reallocate@Base 1.10
  memkind_destroy_kind@Base 1.7.0
  memkind_detect_kind@Base 1.9.0
  memkind_error_message@Base 1.7.0
  memkind_free@Base 1.7.0
  memkind_get_kind_by_partition@Base 1.7.0
- memkind_get_stat@Base 1.10~
+ memkind_get_stat@Base 1.10
  memkind_get_version@Base 1.7.0
  memkind_hbw_all_get_mbind_nodemask@Base 1.7.0
  memkind_hbw_all_hugetlb_init_once@Base 1.7.0
@@ -122,4 +122,4 @@ libmemkind.so.0 libmemkind0 #MINVER#
  memkind_regular_all_get_mbind_nodemask@Base 1.7.0
  memkind_set_arena_map_len@Base 1.7.0
  memkind_thread_get_arena@Base 1.7.0
- memkind_update_cached_stats@Base 1.10~
+ memkind_update_cached_stats@Base 1.10
