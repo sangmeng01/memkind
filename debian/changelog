@@ -1,3 +1,11 @@
+memkind (1.10.1-2) unstable; urgency=medium
+
+  * Disable GetArenaTest.test_TC_MEMKIND_ThreadHash.  The failure, while
+    non-reproducible, is plausible, and the code is still correct (just not
+    as performant as it should).  Closes: #976918.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 21 Dec 2020 15:51:57 +0100
+
 memkind (1.10.1-1) unstable; urgency=medium
 
   * New upstream release.
