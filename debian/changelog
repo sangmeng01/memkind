@@ -1,3 +1,10 @@
+memkind (1.11.0~rc1-1) experimental; urgency=medium
+
+  * New upstream RC.
+  * Update symbols.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Wed, 03 Feb 2021 14:47:55 +0100
+
 memkind (1.10.1-2) unstable; urgency=medium
 
   * Disable GetArenaTest.test_TC_MEMKIND_ThreadHash.  The failure, while
