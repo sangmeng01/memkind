@@ -88,6 +88,25 @@ if test "x$enable_debug" = "x1" ; then
 fi
 AC_SUBST([enable_debug])
 
+#=======================jemalloc_debug=========================================
+AC_ARG_ENABLE([debug-jemalloc],
+  [AS_HELP_STRING([--enable-debug-jemalloc], [Build debugging jemalloc code])],
+[if test "x$enable_debug_jemalloc" = "xno" ; then
+  enable_debug_jemalloc="0"
+else
+  enable_debug_jemalloc="1"
+fi
+],
+[enable_debug_jemalloc="0"]
+)
+
+if test "x$enable_debug_jemalloc" = "x1" ; then
+  jemalloc_build_type_flags=--enable-debug
+else
+  jemalloc_build_type_flags=--disable-fill
+fi
+AC_SUBST([jemalloc_build_type_flags])
+
 #============================gcov==============================================
 AC_ARG_ENABLE([gcov],
   [AS_HELP_STRING([--enable-gcov], [Build code with gcov instructions])],
@@ -128,6 +147,15 @@ if test "x$enable_secure" = "x1" ; then
 fi
 
 AC_SUBST([enable_secure])
+
+#============================secure_getenv===============================
+AC_CHECK_FUNC([secure_getenv],
+              [have_secure_getenv="1"],
+              [have_secure_getenv="0"]
+             )
+if test "x$have_secure_getenv" = "x1" ; then
+  AC_DEFINE([MEMKIND_HAVE_SECURE_GETENV], [], [Detect secure_getenv])
+fi
 
 #============================tcache_max_size_class======================
 
@@ -202,6 +230,31 @@ if test $daxctl_kmem = "yes" ; then
 fi
 AC_SUBST([enable_daxctl])
 
+#===============================hwloc=========================================
+AC_ARG_ENABLE([hwloc],
+  [AS_HELP_STRING([--enable-hwloc], [Build library with hwloc support])],
+[if test "x$enable_hwloc" = "xno" ; then
+  enable_hwloc="0"
+else
+  enable_hwloc="2"
+fi
+],
+[enable_hwloc="1"]
+)
+if test "x$enable_hwloc" = "x1" ; then
+    AC_CHECK_LIB(hwloc, hwloc_memattr_get_best_target, [hwloc_hmat=yes], [hwloc_hmat=no])
+fi
+if test "x$enable_hwloc" = "x2" ; then
+    AC_CHECK_LIB(hwloc, hwloc_memattr_get_best_target, [hwloc_hmat=yes], [AC_MSG_ERROR([libhwloc-devel v2.3.0 or later is required dependency by --enable-hwloc option])])
+fi
+
+if test $hwloc_hmat = "yes" ; then
+    AC_DEFINE([MEMKIND_HWLOC], [1], [Support for hwloc library])
+    AC_SUBST(HWLOC_LIBS, [-lhwloc])
+    LDFLAGS="$LDFLAGS -lhwloc"
+fi
+AC_SUBST([enable_hwloc])
+
 #===============================heap manager=========================================
 AC_ARG_ENABLE([heap_manager],
   [AS_HELP_STRING([--disable-heap-manager], [Use only default allocator: jemalloc])],
@@ -239,6 +292,15 @@ else
 AC_MSG_RESULT([
                Automatic recognition of PMEM NUMA in MEMKIND_DAX_KMEM is disabled
                To enable this feature please install libdaxctl-devel v66 or later
+               and run configure again])
+fi
+if test $hwloc_hmat = "yes" ; then
+AC_MSG_RESULT([
+               Utilization of information about memory performance characteristics is enabled])
+else
+AC_MSG_RESULT([
+               Utilization of information about memory performance characteristics is disabled
+               To enable this feature please install libhwloc-devel v2.3.0 or later
                and run configure again])
 fi
 AC_MSG_RESULT([=================================================================================])

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-2-Clause
-/* Copyright (C) 2014 - 2020 Intel Corporation. */
+/* Copyright (C) 2014 - 2021 Intel Corporation. */
 
 #include <memkind.h>
 #include <memkind/internal/memkind_default.h>
@@ -72,7 +72,7 @@ MEMKIND_EXPORT int memkind_set_arena_map_len(struct memkind *kind)
     if (kind->ops->get_arena == memkind_bijective_get_arena) {
         kind->arena_map_len = 1;
     } else if (kind->ops->get_arena == memkind_thread_get_arena) {
-        char *arena_num_env = secure_getenv("MEMKIND_ARENA_NUM_PER_KIND");
+        char *arena_num_env = memkind_get_env("MEMKIND_ARENA_NUM_PER_KIND");
 
         if (arena_num_env) {
             unsigned long int arena_num_value = strtoul(arena_num_env, NULL, 10);
@@ -113,7 +113,7 @@ bool memkind_get_hog_memory(void)
 
 static void arena_config_init()
 {
-    const char *str = secure_getenv("MEMKIND_HOG_MEMORY");
+    const char *str = memkind_get_env("MEMKIND_HOG_MEMORY");
     memkind_hog_memory = str && str[0] == '1';
 
     arena_init_status = pthread_key_create(&tcache_key, tcache_finalize);
@@ -460,7 +460,7 @@ static inline int get_tcache_flag(unsigned partition, size_t size)
 
     unsigned *tcache_map = pthread_getspecific(tcache_key);
     if(tcache_map == NULL) {
-        tcache_map = calloc(MEMKIND_NUM_BASE_KIND, sizeof(unsigned));
+        tcache_map = jemk_calloc(MEMKIND_NUM_BASE_KIND, sizeof(unsigned));
         if(tcache_map == NULL) {
             return MALLOCX_TCACHE_NONE;
         }
@@ -662,7 +662,7 @@ MEMKIND_EXPORT int memkind_thread_get_arena(struct memkind *kind,
     arena_tsd = pthread_getspecific(kind->arena_key);
 
     if (MEMKIND_UNLIKELY(arena_tsd == NULL)) {
-        arena_tsd = malloc(sizeof(unsigned int));
+        arena_tsd = jemk_malloc(sizeof(unsigned int));
         if (arena_tsd == NULL) {
             err = MEMKIND_ERROR_MALLOC;
             log_err("malloc() failed.");
@@ -835,10 +835,9 @@ int memkind_arena_get_global_stat(memkind_stat_type stat, size_t *value)
     return err;
 }
 
-int memkind_arena_enable_background_threads(size_t threads_limit)
+int memkind_arena_set_max_bg_threads(size_t threads_limit)
 {
-    bool background_thread_val = true;
-    int err;
+    int err = MEMKIND_ERROR_INVALID;
 
     if (threads_limit) {
         err = jemk_mallctl("max_background_threads", NULL, NULL, &threads_limit,
@@ -848,10 +847,14 @@ int memkind_arena_enable_background_threads(size_t threads_limit)
             return MEMKIND_ERROR_INVALID;
         }
     }
-    err = jemk_mallctl("background_thread", NULL, NULL, &background_thread_val,
-                       sizeof(bool));
+    return err;
+}
+
+int memkind_arena_set_bg_threads(bool state)
+{
+    int err = jemk_mallctl("background_thread", NULL, NULL, &state, sizeof(bool));
     if (err) {
-        log_err("Error on activating background thread");
+        log_err("Error while enabling/disabling background thread");
         return MEMKIND_ERROR_INVALID;
     }
     return err;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-2-Clause
-/* Copyright (C) 2016 - 2020 Intel Corporation. */
+/* Copyright (C) 2016 - 2021 Intel Corporation. */
 
 #pragma once
 #ifdef __cplusplus
@@ -96,9 +96,19 @@ struct memkind_config {
     memkind_mem_usage_policy policy; //kind memory usage policy
 };
 
+typedef enum memkind_node_variant_t {
+    NODE_VARIANT_MULTIPLE = 0,
+    NODE_VARIANT_SINGLE = 1,
+    NODE_VARIANT_MAX = 2,
+    NODE_VARIANT_ALL = NODE_VARIANT_MAX,
+    NODE_VARIANT_MAX_EXT = 3
+} memkind_node_variant_t;
+
 void memkind_init(memkind_t kind, bool check_numa);
 
 void *kind_mmap(struct memkind *kind, void *addr, size_t size);
+
+char *memkind_get_env(const char *name);
 
 #ifdef __cplusplus
 }

@@ -13,6 +13,15 @@
 #include <assert.h>
 #include <signal.h>
 #include <string.h>
+
+#ifndef MAP_SYNC
+#define MAP_SYNC 0x80000
+#endif
+
+#ifndef MAP_SHARED_VALIDATE
+#define MAP_SHARED_VALIDATE 0x03
+#endif
+
 MEMKIND_EXPORT struct memkind_ops MEMKIND_PMEM_OPS = {
     .create = memkind_pmem_create,
     .destroy = memkind_pmem_destroy,
@@ -237,7 +246,7 @@ MEMKIND_EXPORT int memkind_pmem_create(struct memkind *kind,
     struct memkind_pmem *priv;
     int err;
 
-    priv = (struct memkind_pmem *)malloc(sizeof(struct memkind_pmem));
+    priv = (struct memkind_pmem *)jemk_malloc(sizeof(struct memkind_pmem));
     if (!priv) {
         log_err("malloc() failed.");
         return MEMKIND_ERROR_MALLOC;
@@ -264,7 +273,7 @@ MEMKIND_EXPORT int memkind_pmem_create(struct memkind *kind,
 exit:
     /* err is set, please don't overwrite it with result of pthread_mutex_destroy */
     pthread_mutex_destroy(&priv->pmem_lock);
-    free(priv);
+    jemk_free(priv);
     return err;
 }
 
@@ -277,8 +286,8 @@ MEMKIND_EXPORT int memkind_pmem_destroy(struct memkind *kind)
     pthread_mutex_destroy(&priv->pmem_lock);
 
     (void) close(priv->fd);
-    free(priv->dir);
-    free(priv);
+    jemk_free(priv->dir);
+    jemk_free(priv);
 
     return 0;
 }
@@ -347,4 +356,34 @@ MEMKIND_EXPORT int memkind_pmem_get_mmap_flags(struct memkind *kind, int *flags)
 {
     *flags = MAP_SHARED;
     return 0;
+}
+
+int memkind_pmem_validate_dir(const char *dir)
+{
+    int ret = MEMKIND_SUCCESS;
+    int fd = -1;
+    const size_t size = sysconf(_SC_PAGESIZE);
+
+    int err = memkind_pmem_create_tmpfile(dir, &fd);
+
+    if (err) {
+        return MEMKIND_ERROR_RUNTIME;
+    }
+
+    if (ftruncate(fd, size) != 0) {
+        ret = MEMKIND_ERROR_RUNTIME;
+        goto end;
+    }
+
+    void *addr = mmap(NULL, size, PROT_READ | PROT_WRITE,
+                      MAP_SHARED_VALIDATE | MAP_SYNC, fd, 0);
+    if (addr == MAP_FAILED) {
+        ret = MEMKIND_ERROR_MMAP;
+        goto end;
+    }
+    munmap(addr, size);
+
+end:
+    (void)close(fd);
+    return ret;
 }

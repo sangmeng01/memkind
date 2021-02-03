@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: BSD-2-Clause
-/* Copyright (C) 2014 - 2020 Intel Corporation. */
+/* Copyright (C) 2014 - 2021 Intel Corporation. */
 
 #define MEMKIND_VERSION_MAJOR 1
-#define MEMKIND_VERSION_MINOR 10
-#define MEMKIND_VERSION_PATCH 1
+#define MEMKIND_VERSION_MINOR 11
+#define MEMKIND_VERSION_PATCH 0
 
 #include <memkind.h>
 #include <memkind/internal/memkind_default.h>
 #include <memkind/internal/memkind_hugetlb.h>
 #include <memkind/internal/memkind_arena.h>
+#include <memkind/internal/memkind_capacity.h>
+#include <memkind/internal/memkind_local.h>
 #include <memkind/internal/memkind_hbw.h>
 #include <memkind/internal/memkind_regular.h>
 #include <memkind/internal/memkind_gbtlb.h>
@@ -29,6 +31,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 #include <assert.h>
 #include <pthread.h>
 #include <errno.h>
@@ -45,6 +48,7 @@
 #define m_get_global_stat(stat, value) heap_manager_get_stat(stat, value)
 #define m_update_cached_stats          heap_manager_update_cached_stats
 #define m_init                         heap_manager_init
+#define m_set_bg_threads(state)        heap_manager_set_bg_threads(state)
 #else
 #define m_detect_kind(ptr)             memkind_arena_detect_kind(ptr)
 #define m_free(ptr)                    memkind_arena_free_with_kind_detect(ptr)
@@ -54,6 +58,7 @@
 #define m_get_global_stat(stat, value) memkind_arena_get_global_stat(stat, value)
 #define m_update_cached_stats          memkind_arena_update_cached_stats
 #define m_init                         memkind_arena_init
+#define m_set_bg_threads(state)        memkind_arena_set_bg_threads(state)
 #endif
 
 /* Clear bits in x, but only this specified in mask. */
@@ -184,6 +189,69 @@ static struct memkind MEMKIND_DAX_KMEM_PREFERRED_STATIC = {
     .init_once = PTHREAD_ONCE_INIT,
 };
 
+static struct memkind MEMKIND_DAX_KMEM_INTERLEAVE_STATIC = {
+    .ops = &MEMKIND_DAX_KMEM_INTERLEAVE_OPS,
+    .partition = MEMKIND_PARTITION_DAX_KMEM_INTERLEAVE,
+    .name = "memkind_dax_kmem_interleave",
+    .init_once = PTHREAD_ONCE_INIT,
+};
+
+static struct memkind MEMKIND_HIGHEST_CAPACITY_STATIC = {
+    .ops = &MEMKIND_HIGHEST_CAPACITY_OPS,
+    .partition = MEMKIND_PARTITION_HIGHEST_CAPACITY,
+    .name = "memkind_highest_capacity",
+    .init_once = PTHREAD_ONCE_INIT,
+};
+
+static struct memkind MEMKIND_HIGHEST_CAPACITY_PREFERRED_STATIC = {
+    .ops = &MEMKIND_HIGHEST_CAPACITY_PREFERRED_OPS,
+    .partition = MEMKIND_PARTITION_HIGHEST_CAPACITY_PREFERRED,
+    .name = "memkind_highest_capacity_preferred",
+    .init_once = PTHREAD_ONCE_INIT,
+};
+
+static struct memkind MEMKIND_HIGHEST_CAPACITY_LOCAL_STATIC = {
+    .ops = &MEMKIND_HIGHEST_CAPACITY_LOCAL_OPS,
+    .partition = MEMKIND_PARTITION_HIGHEST_CAPACITY_LOCAL,
+    .name = "memkind_highest_capacity_local",
+    .init_once = PTHREAD_ONCE_INIT,
+};
+
+static struct memkind MEMKIND_HIGHEST_CAPACITY_LOCAL_PREFERRED_STATIC = {
+    .ops = &MEMKIND_HIGHEST_CAPACITY_LOCAL_PREFERRED_OPS,
+    .partition = MEMKIND_PARTITION_HIGHEST_CAPACITY_LOCAL_PREFERRED,
+    .name = "memkind_highest_capacity_local_preferred",
+    .init_once = PTHREAD_ONCE_INIT,
+};
+
+static struct memkind MEMKIND_LOWEST_LATENCY_LOCAL_STATIC = {
+    .ops = &MEMKIND_LOWEST_LATENCY_LOCAL_OPS,
+    .partition = MEMKIND_PARTITION_LOWEST_LATENCY_LOCAL,
+    .name = "memkind_lowest_latency_local",
+    .init_once = PTHREAD_ONCE_INIT,
+};
+
+static struct memkind MEMKIND_LOWEST_LATENCY_LOCAL_PREFERRED_STATIC = {
+    .ops = &MEMKIND_LOWEST_LATENCY_LOCAL_PREFERRED_OPS,
+    .partition = MEMKIND_PARTITION_LOWEST_LATENCY_LOCAL_PREFERRED,
+    .name = "memkind_lowest_latency_local_preferred",
+    .init_once = PTHREAD_ONCE_INIT,
+};
+
+static struct memkind MEMKIND_HIGHEST_BANDWIDTH_LOCAL_STATIC = {
+    .ops = &MEMKIND_HIGHEST_BANDWIDTH_LOCAL_OPS,
+    .partition = MEMKIND_PARTITION_HIGHEST_BANDWIDTH_LOCAL,
+    .name = "memkind_highest_bandwidth_local",
+    .init_once = PTHREAD_ONCE_INIT,
+};
+
+static struct memkind MEMKIND_HIGHEST_BANDWIDTH_LOCAL_PREFERRED_STATIC = {
+    .ops = &MEMKIND_HIGHEST_BANDWIDTH_LOCAL_PREFERRED_OPS,
+    .partition = MEMKIND_PARTITION_HIGHEST_BANDWIDTH_LOCAL_PREFERRED,
+    .name = "memkind_highest_bandwidth_local_preferred",
+    .init_once = PTHREAD_ONCE_INIT,
+};
+
 MEMKIND_EXPORT struct memkind *MEMKIND_DEFAULT = &MEMKIND_DEFAULT_STATIC;
 MEMKIND_EXPORT struct memkind *MEMKIND_HUGETLB = &MEMKIND_HUGETLB_STATIC;
 MEMKIND_EXPORT struct memkind *MEMKIND_INTERLEAVE = &MEMKIND_INTERLEAVE_STATIC;
@@ -209,6 +277,24 @@ MEMKIND_EXPORT struct memkind *MEMKIND_DAX_KMEM_ALL =
         &MEMKIND_DAX_KMEM_ALL_STATIC;
 MEMKIND_EXPORT struct memkind *MEMKIND_DAX_KMEM_PREFERRED =
         &MEMKIND_DAX_KMEM_PREFERRED_STATIC;
+MEMKIND_EXPORT struct memkind *MEMKIND_DAX_KMEM_INTERLEAVE =
+        &MEMKIND_DAX_KMEM_INTERLEAVE_STATIC;
+MEMKIND_EXPORT struct memkind *MEMKIND_HIGHEST_CAPACITY =
+        &MEMKIND_HIGHEST_CAPACITY_STATIC;
+MEMKIND_EXPORT struct memkind *MEMKIND_HIGHEST_CAPACITY_PREFERRED =
+        &MEMKIND_HIGHEST_CAPACITY_PREFERRED_STATIC;
+MEMKIND_EXPORT struct memkind *MEMKIND_HIGHEST_CAPACITY_LOCAL =
+        &MEMKIND_HIGHEST_CAPACITY_LOCAL_STATIC;
+MEMKIND_EXPORT struct memkind *MEMKIND_HIGHEST_CAPACITY_LOCAL_PREFERRED =
+        &MEMKIND_HIGHEST_CAPACITY_LOCAL_PREFERRED_STATIC;
+MEMKIND_EXPORT struct memkind *MEMKIND_LOWEST_LATENCY_LOCAL =
+        &MEMKIND_LOWEST_LATENCY_LOCAL_STATIC;
+MEMKIND_EXPORT struct memkind *MEMKIND_LOWEST_LATENCY_LOCAL_PREFERRED =
+        &MEMKIND_LOWEST_LATENCY_LOCAL_PREFERRED_STATIC;
+MEMKIND_EXPORT struct memkind *MEMKIND_HIGHEST_BANDWIDTH_LOCAL =
+        &MEMKIND_HIGHEST_BANDWIDTH_LOCAL_STATIC;
+MEMKIND_EXPORT struct memkind *MEMKIND_HIGHEST_BANDWIDTH_LOCAL_PREFERRED =
+        &MEMKIND_HIGHEST_BANDWIDTH_LOCAL_PREFERRED_STATIC;
 
 struct memkind_registry {
     struct memkind *partition_map[MEMKIND_MAX_KIND];
@@ -235,6 +321,15 @@ static struct memkind_registry memkind_registry_g = {
         [MEMKIND_PARTITION_DAX_KMEM] = &MEMKIND_DAX_KMEM_STATIC,
         [MEMKIND_PARTITION_DAX_KMEM_ALL] = &MEMKIND_DAX_KMEM_ALL_STATIC,
         [MEMKIND_PARTITION_DAX_KMEM_PREFERRED] = &MEMKIND_DAX_KMEM_PREFERRED_STATIC,
+        [MEMKIND_PARTITION_DAX_KMEM_INTERLEAVE] = &MEMKIND_DAX_KMEM_INTERLEAVE_STATIC,
+        [MEMKIND_PARTITION_HIGHEST_CAPACITY] = &MEMKIND_HIGHEST_CAPACITY_STATIC,
+        [MEMKIND_PARTITION_HIGHEST_CAPACITY_PREFERRED] = &MEMKIND_HIGHEST_CAPACITY_PREFERRED_STATIC,
+        [MEMKIND_PARTITION_HIGHEST_CAPACITY_LOCAL] = &MEMKIND_HIGHEST_CAPACITY_LOCAL_STATIC,
+        [MEMKIND_PARTITION_HIGHEST_CAPACITY_LOCAL_PREFERRED] = &MEMKIND_HIGHEST_CAPACITY_LOCAL_PREFERRED_STATIC,
+        [MEMKIND_PARTITION_LOWEST_LATENCY_LOCAL] = &MEMKIND_LOWEST_LATENCY_LOCAL_STATIC,
+        [MEMKIND_PARTITION_LOWEST_LATENCY_LOCAL_PREFERRED] = &MEMKIND_LOWEST_LATENCY_LOCAL_PREFERRED_STATIC,
+        [MEMKIND_PARTITION_HIGHEST_BANDWIDTH_LOCAL] = &MEMKIND_HIGHEST_BANDWIDTH_LOCAL_STATIC,
+        [MEMKIND_PARTITION_HIGHEST_BANDWIDTH_LOCAL_PREFERRED] = &MEMKIND_HIGHEST_BANDWIDTH_LOCAL_PREFERRED_STATIC,
     },
     MEMKIND_NUM_BASE_KIND,
     PTHREAD_MUTEX_INITIALIZER
@@ -350,7 +445,7 @@ static void memkind_destroy_dynamic_kind_from_register(unsigned int i,
     if (i >= MEMKIND_NUM_BASE_KIND) {
         memkind_registry_g.partition_map[i] = NULL;
         --memkind_registry_g.num_kind;
-        free(kind);
+        jemk_free(kind);
     }
 }
 
@@ -480,6 +575,15 @@ void memkind_init(memkind_t kind, bool check_numa)
     }
 }
 
+char *memkind_get_env(const char *name)
+{
+#ifdef MEMKIND_HAVE_SECURE_GETENV
+    return secure_getenv(name);
+#else
+    return getenv(name);
+#endif
+}
+
 static void nop(void) {}
 
 static int memkind_create(struct memkind_ops *ops, const char *name,
@@ -520,7 +624,7 @@ static int memkind_create(struct memkind_ops *ops, const char *name,
             goto exit;
         }
     }
-    *kind = (struct memkind *)calloc(1, sizeof(struct memkind));
+    *kind = (struct memkind *)jemk_calloc(1, sizeof(struct memkind));
     if (!*kind) {
         err = MEMKIND_ERROR_MALLOC;
         log_err("calloc() failed.");
@@ -530,7 +634,7 @@ static int memkind_create(struct memkind_ops *ops, const char *name,
     (*kind)->partition = memkind_registry_g.num_kind;
     err = ops->create(*kind, ops, name);
     if (err) {
-        free(*kind);
+        jemk_free(*kind);
         goto exit;
     }
     memkind_registry_g.partition_map[id_kind] = *kind;
@@ -549,7 +653,7 @@ exit:
 static int memkind_use_other_heap_manager(void)
 {
 #ifdef MEMKIND_ENABLE_HEAP_MANAGER
-    const char *env = secure_getenv("MEMKIND_HEAP_MANAGER");
+    const char *env = memkind_get_env("MEMKIND_HEAP_MANAGER");
     if (env && strcmp(env, "TBB") == 0) {
         load_tbb_symbols();
         return 1;
@@ -564,16 +668,16 @@ __attribute__((constructor))
 static void memkind_construct(void)
 {
     if (!memkind_use_other_heap_manager()) {
-        const char *env = secure_getenv("MEMKIND_BACKGROUND_THREAD_LIMIT");
+        const char *env = memkind_get_env("MEMKIND_BACKGROUND_THREAD_LIMIT");
         if (env) {
             char *end;
             errno = 0;
-            size_t thread_limit = strtoull(env, &end, 10);
-            if (*end != '\0' || errno != 0 ) {
-                log_err("Error on parsing value MEMKIND_BACKGROUND_THREAD_LIMIT");
-                return;
+            size_t thread_limit = strtoul(env, &end, 10);
+            if (thread_limit > UINT_MAX || *end != '\0' || errno != 0) {
+                log_fatal("Error: Wrong value of MEMKIND_BACKGROUND_THREAD_LIMIT=%s", env);
+                abort();
             }
-            memkind_arena_enable_background_threads(thread_limit);
+            memkind_arena_set_max_bg_threads(thread_limit);
         }
     }
 }
@@ -815,7 +919,7 @@ MEMKIND_EXPORT int memkind_create_pmem(const char *dir, size_t max_size,
     priv->offset = 0;
     priv->current_size = 0;
     priv->max_size = max_size;
-    priv->dir = malloc(strlen(dir)+1);
+    priv->dir = jemk_malloc(strlen(dir)+1);
     if (!priv->dir) {
         goto exit;
     }
@@ -893,4 +997,14 @@ MEMKIND_EXPORT int memkind_get_stat(memkind_t kind, memkind_stat_type stat,
     } else {
         return kind->ops->get_stat(kind, stat, value);
     }
+}
+
+MEMKIND_EXPORT int memkind_check_dax_path(const char *pmem_dir)
+{
+    return memkind_pmem_validate_dir(pmem_dir);
+}
+
+MEMKIND_EXPORT int memkind_set_bg_threads(bool state)
+{
+    return m_set_bg_threads(state);
 }

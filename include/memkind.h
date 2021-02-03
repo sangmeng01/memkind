@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BSD-2-Clause
-/* Copyright (C) 2014 - 2020 Intel Corporation. */
+/* Copyright (C) 2014 - 2021 Intel Corporation. */
 
 #pragma once
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include <stdbool.h>
 #include <sys/types.h>
 
 /**
@@ -188,8 +189,8 @@ void memkind_config_set_memory_usage_policy(struct memkind_config *cfg,
 /// \brief Create kind that allocates memory with specific memory type, memory binding policy and flags.
 /// \warning EXPERIMENTAL API
 /// \note Currently implemented memory type and policy configurations:
-///.      {MEMKIND_MEMTYPE_DEFAULT, MEMKIND_POLICY_PREFERRED_LOCAL},
-///.      {MEMKIND_MEMTYPE_HIGH_BANDWIDTH, MEMKIND_POLICY_BIND_LOCAL},
+///       {MEMKIND_MEMTYPE_DEFAULT, MEMKIND_POLICY_PREFERRED_LOCAL},
+///       {MEMKIND_MEMTYPE_HIGH_BANDWIDTH, MEMKIND_POLICY_BIND_LOCAL},
 ///       {MEMKIND_MEMTYPE_HIGH_BANDWIDTH, MEMKIND_POLICY_PREFERRED_LOCAL},
 ///       {MEMKIND_MEMTYPE_HIGH_BANDWIDTH, MEMKIND_POLICY_INTERLEAVE_ALL},
 ///       {MEMKIND_MEMTYPE_DEFAULT | MEMKIND_MEMTYPE_HIGH_BANDWIDTH, MEMKIND_POLICY_INTERLEAVE_ALL}.
@@ -272,6 +273,33 @@ extern memkind_t MEMKIND_DAX_KMEM_ALL;
 
 /// \note STANDARD API
 extern memkind_t MEMKIND_DAX_KMEM_PREFERRED;
+
+/// \note STANDARD API
+extern memkind_t MEMKIND_DAX_KMEM_INTERLEAVE;
+
+/// \note STANDARD API
+extern memkind_t MEMKIND_HIGHEST_CAPACITY;
+
+/// \note STANDARD API
+extern memkind_t MEMKIND_HIGHEST_CAPACITY_PREFERRED;
+
+/// \note STANDARD API
+extern memkind_t MEMKIND_HIGHEST_CAPACITY_LOCAL;
+
+/// \note STANDARD API
+extern memkind_t MEMKIND_HIGHEST_CAPACITY_LOCAL_PREFERRED;
+
+/// \note STANDARD API
+extern memkind_t MEMKIND_LOWEST_LATENCY_LOCAL;
+
+/// \note STANDARD API
+extern memkind_t MEMKIND_LOWEST_LATENCY_LOCAL_PREFERRED;
+
+/// \note STANDARD API
+extern memkind_t MEMKIND_HIGHEST_BANDWIDTH_LOCAL;
+
+/// \note STANDARD API
+extern memkind_t MEMKIND_HIGHEST_BANDWIDTH_LOCAL_PREFERRED;
 
 ///
 /// \brief Get Memkind API version
@@ -406,6 +434,22 @@ void memkind_free(memkind_t kind, void *ptr);
 /// \return Pointer to newly transferred allocated memory
 ///
 void *memkind_defrag_reallocate(memkind_t kind, void *ptr);
+
+///
+/// \brief Verifies if file-backed memory kind in the specified directory can be created with the DAX attribute
+/// \note STANDARD API
+/// \param pmem_dir path to specified directory for PMEM kind
+/// \return Memkind operation status, MEMKIND_SUCCESS on success, other values on failure
+///
+int memkind_check_dax_path(const char *pmem_dir);
+
+///
+/// \brief Enables/disables background threads
+/// \note STANDARD API
+/// \param state expected state of background threads - true if enabled, false if disabled
+/// \return Memkind operation status, MEMKIND_SUCCESS on success, other values on failure
+///
+int memkind_set_bg_threads(bool state);
 
 #ifdef __cplusplus
 }

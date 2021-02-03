@@ -1,15 +1,15 @@
-.codecov.yml
+.github/workflows/gha.yml
+.github/pull_request_template.md
 .gitignore
-.travis.yml
 AUTHORS
 CONTRIBUTING
 COPYING
 ChangeLog
 NEWS
-PULL_REQUEST_TEMPLATE.md
 README
 VERSION
 autohbw/autohbw_README
+codecov.yml
 examples/README
 include/memkind/internal/tbb_mem_pool_policy.h
 jemalloc/.appveyor.yml
@@ -345,3 +345,8 @@ test/memkind-perf.ts
 test/memkind-pytests.ts
 test/memkind-slts.ts
 utils/docker/README.md
+utils/docker/hwloc.spec.mk
+utils/qemu/README.md
+utils/qemu/http/preseed.cfg
+utils/qemu/ubuntu-packer.json
+utils/qemu/topology/README.md

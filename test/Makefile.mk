@@ -1,16 +1,18 @@
 # SPDX-License-Identifier: BSD-2-Clause
-# Copyright (C) 2014 - 2020 Intel Corporation.
+# Copyright (C) 2014 - 2021 Intel Corporation.
 
 AM_CPPFLAGS += -Itest/gtest_fused -DMEMKIND_DEPRECATED\(x\)=x
 
 check_PROGRAMS += test/all_tests \
                   test/allocator_perf_tool_tests \
                   test/autohbw_test_helper \
+                  test/background_threads_test \
                   test/dax_kmem_test \
                   test/decorator_test \
                   test/environ_err_dax_kmem_malloc_test \
                   test/environ_err_dax_kmem_malloc_positive_test \
                   test/environ_err_hbw_malloc_test \
+                  test/environ_max_bg_threads_test \
                   test/freeing_memory_segfault_test \
                   test/gb_page_tests_bind_policy \
                   test/locality_test \
@@ -20,6 +22,9 @@ check_PROGRAMS += test/all_tests \
                   # end
 if HAVE_CXX11
 check_PROGRAMS += test/pmem_test \
+                  test/memkind_highcapacity_test \
+                  test/hmat_test \
+                  test/environ_err_hbw_threshold_test \
                   test/defrag_reallocate
 endif
 
@@ -31,6 +36,7 @@ EXTRA_DIST += test/autohbw_test.py \
               test/gtest_fused/gtest/gtest.h \
               test/hbw_detection_test.py \
               test/dax_kmem_env_var_test.py \
+              test/hbw_env_var_test.py \
               test/memkind-afts-ext.ts \
               test/memkind-afts.ts \
               test/memkind-perf-ext.ts \
@@ -52,6 +58,7 @@ test_decorator_test_LDADD = libmemkind.la
 test_environ_err_hbw_malloc_test_LDADD = libmemkind.la
 test_environ_err_dax_kmem_malloc_test_LDADD = libmemkind.la
 test_environ_err_dax_kmem_malloc_positive_test_LDADD = libmemkind.la
+test_environ_max_bg_threads_test_LDADD = libmemkind.la
 test_freeing_memory_segfault_test_LDADD = libmemkind.la
 test_gb_page_tests_bind_policy_LDADD = libmemkind.la
 test_memkind_stat_test_LDADD = libmemkind.la
@@ -60,8 +67,18 @@ test_trace_mechanism_test_helper_LDADD = libmemkind.la
 if HAVE_CXX11
 test_pmem_test_SOURCES = $(fused_gtest) test/memkind_pmem_config_tests.cpp test/memkind_pmem_long_time_tests.cpp test/memkind_pmem_tests.cpp
 test_pmem_test_LDADD = libmemkind.la
+test_memkind_highcapacity_test_SOURCES = $(fused_gtest) test/memkind_highcapacity_tests.cpp
+test_memkind_highcapacity_test_LDADD = libmemkind.la
+test_hmat_test_SOURCES = $(fused_gtest) test/memkind_hmat_tests.cpp test/memory_topology.h
+test_hmat_test_LDADD = libmemkind.la
+test_environ_err_hbw_threshold_test_CXXFLAGS = $(CXXFLAGS) $(OPENMP_CFLAGS)
+test_environ_err_hbw_threshold_test_SOURCES = test/environ_err_hbw_threshold_test.cpp
+test_environ_err_hbw_threshold_test_LDADD = libmemkind.la
 test_defrag_reallocate_SOURCES = $(fused_gtest) test/memkind_defrag_reallocate.cpp
 test_defrag_reallocate_LDADD = libmemkind.la
+test_hmat_test_CXXFLAGS = $(AM_CXXFLAGS) $(CXXFLAGS) $(OPENMP_CFLAGS)
+test_background_threads_test_SOURCES = $(fused_gtest) test/background_threads_test.cpp
+test_background_threads_test_LDADD = libmemkind.la
 endif
 
 fused_gtest = test/gtest_fused/gtest/gtest-all.cc \
@@ -110,10 +127,11 @@ test_locality_test_CXXFLAGS = $(OPENMP_CFLAGS) -O0 -Wno-error $(AM_CPPFLAGS)
 
 test_autohbw_test_helper_SOURCES = test/autohbw_test_helper.c
 test_decorator_test_SOURCES = $(fused_gtest) test/decorator_test.cpp test/decorator_test.h
-test_dax_kmem_test_SOURCES = $(fused_gtest) test/dax_kmem_nodes.h test/dax_kmem_nodes.cpp test/memkind_dax_kmem_test.cpp
+test_dax_kmem_test_SOURCES = $(fused_gtest) test/TestPrereq.hpp test/memkind_dax_kmem_test.cpp
 test_environ_err_hbw_malloc_test_SOURCES = test/environ_err_hbw_malloc_test.cpp
 test_environ_err_dax_kmem_malloc_test_SOURCES = test/environ_err_dax_kmem_malloc_test.cpp
 test_environ_err_dax_kmem_malloc_positive_test_SOURCES = test/environ_err_dax_kmem_malloc_positive_test.cpp
+test_environ_max_bg_threads_test_SOURCES = test/environ_max_bg_threads_test.cpp
 test_freeing_memory_segfault_test_SOURCES = $(fused_gtest) test/freeing_memory_segfault_test.cpp
 test_gb_page_tests_bind_policy_SOURCES = $(fused_gtest) test/gb_page_tests_bind_policy.cpp test/trial_generator.cpp test/check.cpp
 test_memkind_stat_test_SOURCES = $(fused_gtest) test/memkind_stat_test.cpp
@@ -167,6 +185,7 @@ test_allocator_perf_tool_tests_SOURCES = $(allocator_perf_tool_library_sources) 
                                          $(fused_gtest) \
                                          test/alloc_performance_tests.cpp \
                                          test/allocate_to_max_stress_test.cpp \
+                                         test/dax_kmem_alloc_performance_tests.cpp \
                                          test/hbw_allocator_performance_tests.cpp \
                                          test/heap_manager_init_perf_test.cpp \
                                          test/huge_page_test.cpp \
