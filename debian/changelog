@@ -1,3 +1,12 @@
+memkind (1.11.0-1) unstable; urgency=medium
+
+  * Upload to unstable.
+  * Add hwloc to B-Depends.
+  * Unsuffix symbols.
+  * Set Upstream-Contact to the current main maintainer.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Fri, 26 Feb 2021 11:52:07 +0100
+
 memkind (1.11.0~rc1-1) experimental; urgency=medium
 
   * New upstream RC.
