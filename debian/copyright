@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: memkind
-Upstream-Contact: Krzysztof Kulakowski <krzysztof.kulakowski@intel.com>
+Upstream-Contact: Michał Biesek <michal.biesek@intel.com>
 Source: https://github.com/memkind/memkind
 
 Files: *
