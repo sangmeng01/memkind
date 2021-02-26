@@ -2,7 +2,7 @@ Source: memkind
 Section: utils
 Priority: optional
 Maintainer: Adam Borowski <kilobyte@angband.pl>
-Build-Depends: debhelper-compat (= 12), libnuma-dev, libdaxctl-dev, numactl
+Build-Depends: debhelper-compat (= 12), libnuma-dev, libdaxctl-dev, numactl, libhwloc-dev
 Standards-Version: 4.5.1
 Rules-Requires-Root: no
 Homepage: https://github.com/memkind/memkind
