@@ -4,7 +4,7 @@ Upstream-Contact: Michał Biesek <michal.biesek@intel.com>
 Source: https://github.com/memkind/memkind
 
 Files: *
-Copyright: 2014-2018 Intel Corporation
+Copyright: 2014-2021 Intel Corporation
 License: BSD-3-clause
 
 Files: test/gtest_fused/*
