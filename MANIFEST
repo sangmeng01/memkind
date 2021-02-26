@@ -546,6 +546,7 @@ test/random_sizes_allocator.h
 test/run_alloc_benchmark.sh
 test/static_kinds_list.h
 test/static_kinds_tests.cpp
+test/stats_print_test_helper.c
 test/tbbmalloc.h
 test/test.sh
 test/test_dax_kmem.sh
@@ -588,6 +589,7 @@ utils/qemu/topology/clx_2_var3.xml
 utils/qemu/topology/clx_2_var3_emul_hbw.xml
 utils/qemu/topology/clx_2_var3_hmat.xml
 utils/qemu/topology/clx_2_var4_emul_hbw.xml
+utils/qemu/topology/clx_2_var5_emul_hbw.xml
 utils/qemu/topology/clx_4_var1.xml
 utils/qemu/topology/clx_4_var1_emul_hbw.xml
 utils/qemu/topology/clx_4_var1_hmat.xml
