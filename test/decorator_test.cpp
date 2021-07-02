@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: BSD-2-Clause
-/* Copyright (C) 2014 - 2020 Intel Corporation. */
+/* Copyright (C) 2014 - 2021 Intel Corporation. */
 
 #include "memkind.h"
 
 #include "common.h"
-#include "decorator_test.h"
 #include "config.h"
+#include "decorator_test.h"
 
 size_t size = 16;
 memkind_t kind = MEMKIND_DEFAULT;
 
-class DecoratorTest: public :: testing::Test
+class DecoratorTest: public ::testing::Test
 {
 
 protected:
@@ -34,7 +34,7 @@ TEST_F(DecoratorTest, test_TC_MEMKIND_DT_malloc)
     EXPECT_EQ(1, decorators_state->malloc_pre);
     EXPECT_EQ(1, decorators_state->malloc_post);
 
-    memkind_free(0, buffer);
+    memkind_free(NULL, buffer);
 #endif
 }
 
@@ -47,7 +47,7 @@ TEST_F(DecoratorTest, test_TC_MEMKIND_DT_calloc)
     EXPECT_EQ(1, decorators_state->calloc_pre);
     EXPECT_EQ(1, decorators_state->calloc_post);
 
-    memkind_free(0, buffer);
+    memkind_free(NULL, buffer);
 #endif
 }
 
@@ -63,7 +63,7 @@ TEST_F(DecoratorTest, test_TC_MEMKIND_DT_posix_memalign)
     EXPECT_EQ(1, decorators_state->posix_memalign_pre);
     EXPECT_EQ(1, decorators_state->posix_memalign_post);
 
-    memkind_free(0, buffer);
+    memkind_free(NULL, buffer);
 #endif
 }
 
@@ -76,7 +76,7 @@ TEST_F(DecoratorTest, test_TC_MEMKIND_DT_realloc)
     EXPECT_EQ(1, decorators_state->realloc_pre);
     EXPECT_EQ(1, decorators_state->realloc_post);
 
-    memkind_free(0, buffer);
+    memkind_free(NULL, buffer);
 #endif
 }
 
@@ -87,7 +87,7 @@ TEST_F(DecoratorTest, test_TC_MEMKIND_DT_free)
 
     ASSERT_TRUE(buffer != NULL);
 
-    memkind_free(0, buffer);
+    memkind_free(NULL, buffer);
 
     EXPECT_EQ(1, decorators_state->free_pre);
     EXPECT_EQ(1, decorators_state->free_post);

@@ -22,6 +22,7 @@ AC_OPENMP
 AC_CHECK_LIB(numa, numa_available, [], [AC_MSG_ERROR([libnuma is required dependency])])
 AX_PTHREAD([LIBS="$PTHREAD_LIBS $LIBS" CFLAGS="$CFLAGS $PTHREAD_CFLAGS" CC="$PTHREAD_CC"],
            [AC_MSG_ERROR([pthreads are required dependency])])
+AC_SEARCH_LIBS([ceilf], [m])
 
 AM_PROG_CC_C_O
 
@@ -194,6 +195,19 @@ fi
 
 AC_SUBST(memkind_prefix)
 
+#============================memtier_prefix===========================================
+memtier_prefix=je_;
+AC_ARG_VAR(MEMTIER_PREFIX,
+  [Prefix used for intercept additional malloc API with libmemtier, default value je_]
+)
+if test "$MEMTIER_PREFIX" != "" ; then
+  memtier_prefix=$MEMTIER_PREFIX;
+fi
+
+AC_SUBST(memtier_prefix)
+if test "$memtier_prefix" == "$memkind_prefix" ; then
+  AC_MSG_ERROR([MEMTIER_PREFIX and MEMKIND_PREFIX cannot be the same])
+fi
 #============================min_log_alignment=====================================
 min_lg_align_opt="";
 AC_ARG_VAR(MIN_LG_ALIGN,
@@ -288,6 +302,44 @@ if test "x$enable_heap_manager" = "x1" ; then
 fi
 AC_SUBST([enable_heap_manager])
 
+#===============================clang-format====================================
+clang_support=no;
+AC_CHECK_PROGS(CLANG_FORMAT, [clang-format-11 clang-format], "")
+if test "$CLANG_FORMAT" != ""; then
+  CLANG_FORMAT_VERSION=$($CLANG_FORMAT --version)
+  AX_COMPARE_VERSION([$CLANG_FORMAT_VERSION], [ge], [11.0.0], [clang_support=yes], [])
+fi
+AC_SUBST([clang_format], $CLANG_FORMAT)
+AM_CONDITIONAL([HAVE_CLANG_FORMAT], [test "x$clang_support" = xyes])
+AC_CHECK_PROGS(pytest, [pytest pytest-3], false)
+
+#===============================atomic=========================================
+AC_CHECK_HEADERS(stdatomic.h)
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#include <stdint.h>
+#include <stdatomic.h>
+]],[[
+atomic_int v = 8;
+atomic_fetch_add_explicit(&v, 1, memory_order_relaxed);
+]])], [memkind_c11_atomics="1"], [memkind_c11_atomics="0"])
+if test "x$memkind_c11_atomics" = "x1" ; then
+  AC_DEFINE([MEMKIND_ATOMIC_C11_SUPPORT], [1], [C11 Atomics are supported])
+fi
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],[[
+int v = 8;
+__atomic_fetch_add(&v, 1, __ATOMIC_RELAXED);
+]])], [memkind_atomic_builtins="1"], [memkind_atomic_builtins="0"])
+if test "x$memkind_atomic_builtins" = "x1" ; then
+  AC_DEFINE([MEMKIND_ATOMIC_BUILTINS_SUPPORT], [1], [__atomic_c* compiler builtins are supported])
+fi
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],[[
+int v = 8;
+__sync_fetch_and_add(&v, 1);
+]])], [memkind_sync_fetch="1"], [memkind_sync_fetch="0"])
+if test "x$memkind_sync_fetch" = "x1" ; then
+  AC_DEFINE([MEMKIND_ATOMIC_SYNC_SUPPORT], [1], [__sync_* compiler builtins are supported])
+fi
+
 #============================cxx11=============================================
 
 AX_CXX_COMPILE_STDCXX_11([noext], [optional])
@@ -319,5 +371,15 @@ AC_MSG_RESULT([
                Utilization of information about memory performance characteristics is disabled
                To enable this feature please install libhwloc-devel v2.3.0 or later
                and run configure again])
+fi
+if test "$clang_support" = "yes" ; then
+AC_MSG_RESULT([
+               Automatic code style formatting is enabled
+               Calling 'make code-style-check' will print suggested style changes
+               Calling 'make code-style-apply' will apply suggested style changes to code])
+else
+AC_MSG_RESULT([
+               Automatic code style formatting is disabled. To enable this feature please
+               install clang-format v11.0.0 or later and run configure again.])
 fi
 AC_MSG_RESULT([=================================================================================])

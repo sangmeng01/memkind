@@ -2,17 +2,18 @@
 /* Copyright (C) 2017 - 2021 Intel Corporation. */
 
 #include <memkind/internal/heap_manager.h>
-#include <memkind/internal/tbb_wrapper.h>
 #include <memkind/internal/memkind_arena.h>
+#include <memkind/internal/tbb_wrapper.h>
 
-#include <stdio.h>
 #include <pthread.h>
+#include <stdio.h>
 #include <string.h>
 
 static struct heap_manager_ops *heap_manager_g;
 
 static pthread_once_t heap_manager_init_once_g = PTHREAD_ONCE_INIT;
 
+// clang-format off
 struct heap_manager_ops {
     void (*init)(struct memkind *kind);
     size_t (*heap_manager_malloc_usable_size)(void *ptr);
@@ -23,13 +24,12 @@ struct heap_manager_ops {
     int (*heap_manager_get_stat)(memkind_stat_type stat, size_t *value);
     void *(*heap_manager_defrag_reallocate)(void *ptr);
     int (*heap_manager_set_bg_threads)(bool state);
-    int (*heap_manager_stats_print)(void (*write_cb) (void *, const char *),
-                                    void *cbopaque, memkind_stat_print_opt opts);
+    int (*heap_manager_stats_print)(void (*write_cb)(void *, const char *), void *cbopaque, memkind_stat_print_opt opts);
 };
 
 static struct heap_manager_ops arena_heap_manager_g = {
     .init = memkind_arena_init,
-    .heap_manager_malloc_usable_size = memkind_arena_malloc_usable_size,
+    .heap_manager_malloc_usable_size = jemk_malloc_usable_size,
     .heap_manager_free = memkind_arena_free_with_kind_detect,
     .heap_manager_realloc = memkind_arena_realloc_with_kind_detect,
     .heap_manager_detect_kind = memkind_arena_detect_kind,
@@ -52,12 +52,13 @@ static struct heap_manager_ops tbb_heap_manager_g = {
     .heap_manager_set_bg_threads = tbb_set_bg_threads,
     .heap_manager_stats_print = tbb_stats_print
 };
+// clang-format on
 
 static void set_heap_manager()
 {
     heap_manager_g = &arena_heap_manager_g;
     const char *env = memkind_get_env("MEMKIND_HEAP_MANAGER");
-    if(env && strcmp(env, "TBB") == 0) {
+    if (env && strcmp(env, "TBB") == 0) {
         heap_manager_g = &tbb_heap_manager_g;
     }
 }
@@ -113,8 +114,9 @@ int heap_manager_set_bg_threads(bool state)
     return get_heap_manager()->heap_manager_set_bg_threads(state);
 }
 
-int heap_manager_stats_print(void (*write_cb) (void *, const char *),
+int heap_manager_stats_print(void (*write_cb)(void *, const char *),
                              void *cbopaque, memkind_stat_print_opt opts)
 {
-    return get_heap_manager()->heap_manager_stats_print(write_cb, cbopaque, opts);
+    return get_heap_manager()->heap_manager_stats_print(write_cb, cbopaque,
+                                                        opts);
 }

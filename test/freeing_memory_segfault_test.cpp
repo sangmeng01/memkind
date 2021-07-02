@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: BSD-2-Clause
-/* Copyright (C) 2017 - 2020 Intel Corporation. */
+/* Copyright (C) 2017 - 2021 Intel Corporation. */
 
-#include "memkind.h"
 #include "common.h"
+#include "memkind.h"
 #include <thread>
 
-//This test reproduce segfault when using TBB library.
-class FreeingMemorySegfault: public :: testing::Test
+// This test reproduce segfault when using TBB library.
+class FreeingMemorySegfault: public ::testing::Test
 {
 protected:
-    void SetUp() {}
-    void TearDown() {}
+    void SetUp()
+    {}
+    void TearDown()
+    {}
 };
 
 TEST_F(FreeingMemorySegfault,
@@ -24,6 +26,6 @@ TEST_F(FreeingMemorySegfault,
     });
     t.join();
 
-    memkind_free(0, ptr);
+    memkind_free(NULL, ptr);
     SUCCEED();
 }

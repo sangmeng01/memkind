@@ -5,17 +5,22 @@ jobs:
 
   linting:
     runs-on: ubuntu-20.04
-    name: Code Linting - Astyle
+    name: Code Linting - clang-format
     steps:
 
-    - name: Install astyle
-      run: sudo apt install astyle
+    - name: Install basic dependencies
+      run: sudo apt install autoconf clang-format-11 libnuma-dev
 
     - name: Checkout
       uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
 
-    - name: Run Astyle
-      run: ./astyle.sh
+    - name: Run code-style check
+      run: |
+        ./autogen.sh
+        ./configure
+        make code-style-check
 
   codespell:
     runs-on: ubuntu-20.04
@@ -29,6 +34,53 @@ jobs:
       with:
         skip: ./jemalloc,./test/gtest_fused/gtest,./.github/workflows/gha.yml
         ignore_words_list: "ue"
+
+  docker-build:
+    runs-on: ${{ matrix.os }}
+    name: Docker build  ${{ matrix.docker_image }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+        docker_image: [fedora-34, ubuntu-20.04, centos-7]
+    env:
+        MEMKIND_HOST_WORKDIR: ${{ github.workspace }}
+        ENABLE_HWLOC: 1
+        DOCKER_RUN_SCRIPT: utils/docker/run_local.sh
+        DOCKER_IMAGE_FULL_PATH: utils/docker/Dockerfile.${{ matrix.docker_image }}
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Change permissions for Docker user
+        run: sudo chmod -R o+rwx ${{ github.workspace }}
+
+      - name: Run Docker build
+        run: |
+          if [ "${{ matrix.docker_image }}" == centos-7 ]; then
+            sudo --preserve-env=MEMKIND_HOST_WORKDIR "${{ env.DOCKER_RUN_SCRIPT }}" "${{ env.DOCKER_IMAGE_FULL_PATH }}"
+          else
+            sudo --preserve-env=MEMKIND_HOST_WORKDIR,ENABLE_HWLOC "${{ env.DOCKER_RUN_SCRIPT }}" "${{ env.DOCKER_IMAGE_FULL_PATH }}"
+          fi
+
+  python-linting:
+    runs-on: ubuntu-20.04
+    name: Code Linting - Python
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Set up Python environment
+      uses: actions/setup-python@v2
+
+    - name: flake8 Lint
+      uses: py-actions/flake8@v1
+      with:
+        exclude: "./jemalloc"
+        ignore: "W503"
 
   building:
     runs-on: ${{ matrix.os }}
@@ -56,7 +108,7 @@ jobs:
         fetch-depth: 0
 
     - name: Ccache setup
-      uses: actions/cache@v2.1.3
+      uses: actions/cache@v2.1.4
       with:
         path: ~/.ccache
         key: ccache-${{ env.CC_BUILD_ID }}-static-build-${{ github.sha }}
@@ -68,7 +120,7 @@ jobs:
     - name: Install daxctl dependency
       run: |
           if [ "${{ matrix.daxctl }}" == true ]; then
-              sudo apt install libdaxctl-dev
+            sudo apt install libdaxctl-dev
           else
             echo "Skipping daxctl installation"
           fi
