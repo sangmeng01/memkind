@@ -71,7 +71,6 @@ libmemkind.so.0 libmemkind0 #MINVER#
  memkind_arena_free@Base 1.8.0
  memkind_arena_free_with_kind_detect@Base 1.9.0
  memkind_arena_malloc@Base 1.7.0
- memkind_arena_malloc_usable_size@Base 1.9.0
  memkind_arena_posix_memalign@Base 1.7.0
  memkind_arena_realloc@Base 1.7.0
  memkind_arena_realloc_with_kind_detect@Base 1.9.0
@@ -144,3 +143,33 @@ libmemkind.so.0 libmemkind0 #MINVER#
  memkind_stats_print@Base 1.11
  memkind_thread_get_arena@Base 1.7.0
  memkind_update_cached_stats@Base 1.10
+ memtier_builder_add_tier@Base 1.12
+ memtier_builder_construct_memtier_memory@Base 1.12
+ memtier_builder_delete@Base 1.12
+ memtier_builder_new@Base 1.12
+ memtier_calloc@Base 1.12
+ memtier_ctl_set@Base 1.12
+ memtier_delete_memtier_memory@Base 1.12
+ memtier_kind_allocated_size@Base 1.12
+ memtier_kind_calloc@Base 1.12
+ memtier_kind_free@Base 1.12
+ memtier_kind_malloc@Base 1.12
+ memtier_kind_posix_memalign@Base 1.12
+ memtier_kind_realloc@Base 1.12
+ memtier_malloc@Base 1.12
+ memtier_posix_memalign@Base 1.12
+ memtier_realloc@Base 1.12
+ memtier_usable_size@Base 1.12
+libmemtier.so.0 libmemkind0 #MINVER#
+ calloc@Base 1.12
+ free@Base 1.12
+ je_calloc@Base 1.12
+ je_free@Base 1.12
+ je_malloc@Base 1.12
+ je_malloc_usable_size@Base 1.12
+ je_posix_memalign@Base 1.12
+ je_realloc@Base 1.12
+ malloc@Base 1.12
+ malloc_usable_size@Base 1.12
+ posix_memalign@Base 1.12
+ realloc@Base 1.12
