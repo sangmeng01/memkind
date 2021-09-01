@@ -1,3 +1,16 @@
+memkind (1.12.0-1) unstable; urgency=medium
+
+  * New upstream release.
+  * dh 13.
+  * Drop a bunch of architectures:
+    • s390x: no NUMA hardware (Ubuntu enables CONFIG_NUMA but only for
+      faking it to work around issues in some programs), no pmem, no HBW.
+    • ia64: no CONFIG_NUMA in Debian kernels, broken B-Deps
+    • alpha: no NUMA or anything in any kernels
+    • sparc64: no CONFIG_NUMA in Debian
+
+ -- Adam Borowski <kilobyte@angband.pl>  Wed, 01 Sep 2021 15:23:19 +0200
+
 memkind (1.12.0~rc1-1) experimental; urgency=medium
 
   * New upstream RC.
