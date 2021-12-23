@@ -9,6 +9,7 @@ libmemkind.so.0 libmemkind0 #MINVER#
  MEMKIND_DAX_KMEM_PREFERRED_OPS@Base 1.10
  MEMKIND_DEFAULT@Base 1.7.0
  MEMKIND_DEFAULT_OPS@Base 1.7.0
+ MEMKIND_FIXED_OPS@Base 1.13.0
  MEMKIND_GBTLB@Base 1.7.0
  MEMKIND_GBTLB_OPS@Base 1.7.0
  MEMKIND_HBW@Base 1.7.0
@@ -84,6 +85,7 @@ libmemkind.so.0 libmemkind0 #MINVER#
  memkind_config_set_memory_usage_policy@Base 1.9.0
  memkind_config_set_path@Base 1.9.0
  memkind_config_set_size@Base 1.9.0
+ memkind_create_fixed@Base 1.13.0
  memkind_create_kind@Base 1.7.0
  memkind_create_pmem@Base 1.7.0
  memkind_create_pmem_with_config@Base 1.9.0
@@ -106,7 +108,11 @@ libmemkind.so.0 libmemkind0 #MINVER#
  memkind_destroy_kind@Base 1.7.0
  memkind_detect_kind@Base 1.9.0
  memkind_error_message@Base 1.7.0
+ memkind_fixed_create@Base 1.13.0
+ memkind_fixed_destroy@Base 1.13.0
+ memkind_fixed_mmap@Base 1.13.0
  memkind_free@Base 1.7.0
+ memkind_get_capacity@Base 1.13.0
  memkind_get_kind_by_partition@Base 1.7.0
  memkind_get_stat@Base 1.10
  memkind_get_version@Base 1.7.0
