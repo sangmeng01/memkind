@@ -71,6 +71,22 @@ if test "x${enable_decorators}" = "x1" ; then
 fi
 AC_SUBST([enable_decorators])
 
+#============================log_to_file=======================================
+AC_ARG_ENABLE([logging_to_file],
+  [AS_HELP_STRING([--enable-logging-to-file], [Log to file for each process])],
+[if test "x$enable_logging_to_file" = "xyes" ; then
+  enable_logging_to_file="1"
+else
+  enable_logging_to_file="0"
+fi
+],
+[enable_logging_to_file="0"]
+)
+if test "x${enable_logging_to_file}" = "x1" ; then
+  AC_DEFINE([MEMKIND_LOG_TO_FILE], [ ], [Log to file for each process])
+fi
+AC_SUBST([enable_logging_to_file])
+
 #============================debug=============================================
 AC_ARG_ENABLE([debug],
   [AS_HELP_STRING([--enable-debug], [Build debugging code and compile with -O0 -g])],
@@ -340,8 +356,21 @@ if test "x$memkind_sync_fetch" = "x1" ; then
   AC_DEFINE([MEMKIND_ATOMIC_SYNC_SUPPORT], [1], [__sync_* compiler builtins are supported])
 fi
 
-#============================cxx11=============================================
+#===============================malloc_usable_size=============================
+AC_CHECK_HEADERS(malloc.h)
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#include <malloc.h>
+#include <stddef.h>
+]],[[
+size_t malloc_usable_size(const void *ptr);
+]])], [memkind_malloc_usable_size_const="1"], [memkind_malloc_usable_size_const="0"])
+if test "x$memkind_malloc_usable_size_const" = "x1" ; then
+  AC_DEFINE([MEMKIND_MALLOC_USABLE_SIZE_CONST], [const], [malloc_usable_size accepts const ptr])
+else
+  AC_DEFINE([MEMKIND_MALLOC_USABLE_SIZE_CONST], [], [malloc_usable_size doesn't accept const ptr])
+fi
 
+#============================cxx11=============================================
 AX_CXX_COMPILE_STDCXX_11([noext], [optional])
 AM_CONDITIONAL([HAVE_CXX11], [test "x$HAVE_CXX11" = x1])
 

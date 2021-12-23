@@ -2,7 +2,7 @@
 /* Copyright (C) 2014 - 2021 Intel Corporation. */
 
 #define MEMKIND_VERSION_MAJOR 1
-#define MEMKIND_VERSION_MINOR 12
+#define MEMKIND_VERSION_MINOR 13
 #define MEMKIND_VERSION_PATCH 0
 
 #include <memkind.h>
@@ -11,6 +11,7 @@
 #include <memkind/internal/memkind_capacity.h>
 #include <memkind/internal/memkind_dax_kmem.h>
 #include <memkind/internal/memkind_default.h>
+#include <memkind/internal/memkind_fixed.h>
 #include <memkind/internal/memkind_gbtlb.h>
 #include <memkind/internal/memkind_hbw.h>
 #include <memkind/internal/memkind_hugetlb.h>
@@ -37,6 +38,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/param.h>
+#include <sys/statvfs.h>
 #include <unistd.h>
 
 // clang-format off
@@ -734,8 +736,107 @@ MEMKIND_EXPORT int memkind_check_available(struct memkind *kind)
     return err;
 }
 
+MEMKIND_EXPORT ssize_t memkind_get_capacity(struct memkind *kind)
+{
+    struct bitmask *mask = NULL;
+    ssize_t capacity = 0;
+    bool all_nodes_ptr_used = false;
+
+    if (kind->ops->get_mbind_mode == memkind_preferred_get_mbind_mode ||
+        kind->ops->check_available == memkind_hbw_hugetlb_check_available) {
+        log_err("memkind_get_capacity() failed. %s kind is not supported.",
+                kind->name);
+        return -1;
+    }
+
+    int err = numa_available();
+    if (err) {
+        log_fatal("[%s] NUMA not available (error code:%d).", kind->name, err);
+        abort();
+    }
+
+    if (MEMKIND_LIKELY(kind->ops->get_mbind_nodemask)) {
+        mask = numa_allocate_nodemask();
+        if (!mask) {
+            log_err("numa_allocate_nodemask() failed");
+            return -1;
+        }
+
+        err = kind->ops->get_mbind_nodemask(kind, mask->maskp, mask->size);
+        if (err != MEMKIND_SUCCESS) {
+            log_err("get_mbind_nodemask() failed");
+            numa_free_nodemask(mask);
+            return -1;
+        }
+    } else if (kind == MEMKIND_DEFAULT) {
+        mask = numa_all_nodes_ptr;
+        all_nodes_ptr_used = true;
+    }
+
+    if (mask) {
+        int i;
+        ssize_t ret;
+        for (i = 0; i < mask->size; i++) {
+            if (numa_bitmask_isbitset(mask, i)) {
+                ret = numa_node_size64(i, NULL);
+                if (ret == -1) {
+                    log_err("numa_node_size64() failed");
+                    numa_free_nodemask(mask);
+                    return -1;
+                }
+                capacity += ret;
+            }
+        }
+        if (!all_nodes_ptr_used) {
+            numa_free_nodemask(mask);
+        }
+
+    } else if (kind->ops == &MEMKIND_PMEM_OPS) {
+        struct memkind_pmem *pmem_priv = kind->priv;
+        capacity = pmem_priv->max_size;
+        if (capacity == 0) {
+            struct statvfs buf;
+            int ret = statvfs(pmem_priv->dir, &buf);
+            if (ret == -1) {
+                log_err("statvfs() failed with errno: %d", errno);
+                return -1;
+            }
+            capacity = buf.f_blocks * buf.f_frsize;
+        }
+    } else if (kind->ops == &MEMKIND_FIXED_OPS) {
+        struct memkind_fixed *fixed_priv = kind->priv;
+        capacity = fixed_priv->size;
+    } else if (kind == MEMKIND_HUGETLB) {
+        size_t nr_hugepages_cached, nr_overcommit_hugepages_cached,
+            total_hugepages;
+        size_t pagesize = 2 << 20;
+
+        nodemask_t nodemask;
+        struct bitmask nodemask_bm = {NUMA_NUM_NODES, nodemask.n};
+        numa_bitmask_setall(&nodemask_bm);
+
+        err = get_nr_hugepages_cached(pagesize, &nodemask_bm,
+                                      &nr_hugepages_cached);
+        if (err) {
+            log_err("Getting number of hugepages failed");
+            return -1;
+        }
+        err = get_nr_overcommit_hugepages_cached(
+            pagesize, &nr_overcommit_hugepages_cached);
+        if (err) {
+            log_err("Getting number of hugepages failed");
+            return -1;
+        }
+        total_hugepages = nr_hugepages_cached + nr_overcommit_hugepages_cached;
+        capacity = (ssize_t)total_hugepages * pagesize;
+    }
+
+    return capacity;
+}
+
+// clang-format off
 MEMKIND_EXPORT size_t memkind_malloc_usable_size(struct memkind *kind,
-                                                 void *ptr)
+                                                 MEMKIND_MALLOC_USABLE_SIZE_CONST void *ptr)
 {
     if (!kind) {
         return m_usable_size(ptr);
@@ -743,6 +844,7 @@ MEMKIND_EXPORT size_t memkind_malloc_usable_size(struct memkind *kind,
         return kind->ops->malloc_usable_size(kind, ptr);
     }
 }
+// clang-format on
 
 MEMKIND_EXPORT void *memkind_malloc(struct memkind *kind, size_t size)
 {
@@ -944,6 +1046,25 @@ MEMKIND_EXPORT int memkind_create_pmem_with_config(struct memkind_config *cfg,
     }
 
     return status;
+}
+
+MEMKIND_EXPORT int memkind_create_fixed(void *addr, size_t size,
+                                        memkind_t *kind)
+{
+    char name[80];
+    snprintf(name, sizeof(name), "fixed%p", addr);
+
+    int err = memkind_create(&MEMKIND_FIXED_OPS, name, kind);
+    if (err)
+        return err;
+
+    struct memkind_fixed *priv = (*kind)->priv;
+
+    priv->addr = addr;
+    priv->current = 0;
+    priv->size = size;
+
+    return MEMKIND_SUCCESS;
 }
 
 static int memkind_get_kind_by_partition_internal(int partition,

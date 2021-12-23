@@ -9,6 +9,10 @@ extern "C" {
 #include <stdbool.h>
 #include <sys/types.h>
 
+#ifndef MEMKIND_MALLOC_USABLE_SIZE_CONST
+#define MEMKIND_MALLOC_USABLE_SIZE_CONST
+#endif
+
 /**
  * Header file for the memkind heap manager.
  * More details in memkind(3) man page.
@@ -506,6 +510,17 @@ int memkind_create_pmem_with_config(struct memkind_config *cfg,
                                     memkind_t *kind);
 
 ///
+/// \brief Create a new kind on a fixed size map
+/// \note STANDARD API
+/// \param addr address of the mapping
+/// \param size size of the mapping
+/// \param kind pointer to kind which will be created
+/// \return Memkind operation status, MEMKIND_SUCCESS on success, other values
+///         on failure
+///
+int memkind_create_fixed(void *addr, size_t size, memkind_t *kind);
+
+///
 /// \brief Check if kind is available
 /// \note STANDARD API
 /// \param kind specified memory kind
@@ -513,6 +528,17 @@ int memkind_create_pmem_with_config(struct memkind_config *cfg,
 ///         on failure
 ///
 int memkind_check_available(memkind_t kind);
+
+///
+/// \brief Get capacity of memory for a given kind
+/// \note STANDARD API
+/// \param kind specified memory kind
+/// \return Capacity on nodes from which a given kind could allocate
+///         (file size or filesystem capacity in case of a file-backed PMEM
+///         kind; memory area size for fixed kind) in bytes on success, -1
+///         on failure
+///
+ssize_t memkind_get_capacity(memkind_t kind);
 
 ///
 /// \brief Update memkind cached statistics
@@ -564,7 +590,8 @@ void *memkind_malloc(memkind_t kind, size_t size);
 /// \param ptr pointer to the allocated memory
 /// \return Number of usable bytes
 ///
-size_t memkind_malloc_usable_size(memkind_t kind, void *ptr);
+size_t memkind_malloc_usable_size(memkind_t kind,
+                                  MEMKIND_MALLOC_USABLE_SIZE_CONST void *ptr);
 
 ///
 /// \brief Allocates memory of the specified kind for an array of num elements

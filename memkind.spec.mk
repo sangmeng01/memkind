@@ -164,6 +164,7 @@ rm -f %{buildroot}/%{_libdir}/libmemtier.{l,}a
 %{_includedir}/hbw_allocator.h
 %{_includedir}/memkind_allocator.h
 %{_includedir}/pmem_allocator.h
+%{_includedir}/fixed_allocator.h
 %{_libdir}/lib%{namespace}.so
 %{_libdir}/libautohbw.so
 %{_libdir}/libmemtier.so
@@ -174,6 +175,7 @@ rm -f %{buildroot}/%{_libdir}/libmemtier.{l,}a
 %{_mandir}/man3/hbwmalloc.3.*
 %{_mandir}/man3/hbwallocator.3.*
 %{_mandir}/man3/pmemallocator.3.*
+%{_mandir}/man3/fixedallocator.3.*
 %{_mandir}/man3/%{namespace}*.3.*
 %{_mandir}/man7/autohbw.7.*
 %{_mandir}/man7/memtier.7.*
@@ -192,6 +194,7 @@ $(memkind_test_dir)/decorator_test
 $(memkind_test_dir)/locality_test
 $(memkind_test_dir)/freeing_memory_segfault_test
 $(memkind_test_dir)/gb_page_tests_bind_policy
+${memkind_test_dir}/get_capacity_test
 $(memkind_test_dir)/filter_memkind
 $(memkind_test_dir)/hello_hbw
 $(memkind_test_dir)/hello_memkind
@@ -218,6 +221,7 @@ ${memkind_test_dir}/pmem_multithreads
 ${memkind_test_dir}/pmem_multithreads_onekind
 $(memkind_test_dir)/pmem_free_with_unknown_kind
 ${memkind_test_dir}/pmem_cpp_allocator
+${memkind_test_dir}/fixed_cpp_allocator
 ${memkind_test_dir}/pmem_test
 ${memkind_test_dir}/allocator_perf_tool_tests
 ${memkind_test_dir}/perf_tool
