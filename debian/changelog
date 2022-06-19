@@ -1,3 +1,9 @@
+memkind (1.13.0-2) unstable; urgency=medium
+
+  * Fix FTBFS with LTO.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Sun, 19 Jun 2022 10:16:45 +0200
+
 memkind (1.13.0-1) unstable; urgency=medium
 
   * New upstream release.
