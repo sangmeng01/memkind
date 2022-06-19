@@ -3,7 +3,7 @@ Section: utils
 Priority: optional
 Maintainer: Adam Borowski <kilobyte@angband.pl>
 Build-Depends: debhelper-compat (= 13), libnuma-dev, libdaxctl-dev, numactl, libhwloc-dev
-Standards-Version: 4.6.0
+Standards-Version: 4.6.1
 Rules-Requires-Root: no
 Homepage: https://github.com/memkind/memkind
 Vcs-Git: https://github.com/kilobyte/memkind.git -b debian
