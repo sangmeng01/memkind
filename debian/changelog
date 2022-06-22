@@ -1,3 +1,9 @@
+memkind (1.14.0~rc1-1) experimental; urgency=medium
+
+  * New upstream RC.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Wed, 22 Jun 2022 18:02:00 +0200
+
 memkind (1.13.0-2) unstable; urgency=medium
 
   * Fix FTBFS with LTO.
