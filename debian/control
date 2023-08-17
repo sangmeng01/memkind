@@ -13,7 +13,7 @@ Vcs-Browser: https://github.com/kilobyte/memkind/tree/debian
 # _without_ NUMA disablement!
 
 Package: libmemkind0
-Architecture: amd64 arm64 ppc64el mips64el ppc64 riscv64
+Architecture: amd64 arm64 ppc64el loong64 mips64el ppc64 riscv64
 Section: libs
 Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -26,7 +26,7 @@ Description: user-extensible heap manager for heterogeneous memory platforms
  This package contains the runtime library.
 
 Package: libmemkind-dev
-Architecture: amd64 arm64 ppc64el mips64el ppc64 riscv64
+Architecture: amd64 arm64 ppc64el loong64 mips64el ppc64 riscv64
 Section: libdevel
 Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}, libmemkind0 (= ${binary:Version})
@@ -40,7 +40,7 @@ Description: user-extensible heap manager for heterogeneous memory platforms
  libraries.
 
 Package: libmemkind-progs
-Architecture: amd64 arm64 ppc64el mips64el ppc64 riscv64
+Architecture: amd64 arm64 ppc64el loong64 mips64el ppc64 riscv64
 Section: admin
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}
